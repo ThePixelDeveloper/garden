@@ -27,7 +27,7 @@ import {
   resetLocalConfig,
   testGitUrl,
 } from "../../helpers"
-import { getNames, findByName, deepOmitUndefined } from "../../../src/util/util"
+import { getNames, findByName } from "../../../src/util/util"
 import { LinkedSource } from "../../../src/config-store"
 import { ModuleVersion } from "../../../src/vcs/vcs"
 import { getModuleCacheContext } from "../../../src/types/module"
@@ -2017,7 +2017,7 @@ describe("Garden", () => {
       const garden = await makeTestGardenA()
       await garden.scanModules()
 
-      const modules = await garden["resolveModuleConfigs"](garden.log)
+      const modules = await garden["resolveModules"]({ log: garden.log })
       expect(getNames(modules).sort()).to.eql(["module-a", "module-b", "module-c"])
     })
 
@@ -2025,7 +2025,7 @@ describe("Garden", () => {
       const garden = await makeTestGarden(resolve(dataDir, "test-projects", "multiple-module-config"))
       await garden.scanModules()
 
-      const modules = await garden["resolveModuleConfigs"](garden.log)
+      const modules = await garden["resolveModules"]({ log: garden.log })
       expect(getNames(modules).sort()).to.eql([
         "module-a1",
         "module-a2",
@@ -2039,7 +2039,7 @@ describe("Garden", () => {
     it("should scan and add modules for projects with external project sources", async () => {
       const garden = await makeExtProjectSourcesGarden()
       await garden.scanModules()
-      const modules = await garden["resolveModuleConfigs"](garden.log)
+      const modules = await garden["resolveModules"]({ log: garden.log })
       expect(getNames(modules).sort()).to.eql(["module-a", "module-b", "module-c"])
     })
 
@@ -2057,40 +2057,40 @@ describe("Garden", () => {
 
     it("should scan and add modules with config files with yaml and yml extensions", async () => {
       const garden = await makeTestGarden(getDataDir("test-project-yaml-file-extensions"))
-      const modules = await garden["resolveModuleConfigs"](garden.log)
+      const modules = await garden["resolveModules"]({ log: garden.log })
       expect(getNames(modules).sort()).to.eql(["module-yaml", "module-yml"])
     })
 
     it("should respect the modules.include and modules.exclude fields, if specified", async () => {
       const projectRoot = getDataDir("test-projects", "project-include-exclude")
       const garden = await makeTestGarden(projectRoot)
-      const moduleConfigs = await garden["resolveModuleConfigs"](garden.log)
+      const modules = await garden["resolveModules"]({ log: garden.log })
 
       // Should NOT include "nope" and "module-c"
-      expect(getNames(moduleConfigs).sort()).to.eql(["module-a", "module-b"])
+      expect(getNames(modules).sort()).to.eql(["module-a", "module-b"])
     })
 
     it("should respect .gitignore and .gardenignore files", async () => {
       const projectRoot = getDataDir("test-projects", "dotignore")
       const garden = await makeTestGarden(projectRoot)
-      const moduleConfigs = await garden["resolveModuleConfigs"](garden.log)
+      const modules = await garden["resolveModules"]({ log: garden.log })
 
-      expect(getNames(moduleConfigs).sort()).to.eql(["module-a"])
+      expect(getNames(modules).sort()).to.eql(["module-a"])
     })
 
     it("should respect custom dotignore files", async () => {
       const projectRoot = getDataDir("test-projects", "dotignore")
       const garden = await makeTestGarden(projectRoot)
-      const moduleConfigs = await garden["resolveModuleConfigs"](garden.log)
+      const modules = await garden["resolveModules"]({ log: garden.log })
 
-      expect(getNames(moduleConfigs).sort()).to.eql(["module-a"])
+      expect(getNames(modules).sort()).to.eql(["module-a"])
     })
 
     it("should throw a nice error if module paths overlap", async () => {
       const projectRoot = getDataDir("test-projects", "multiple-module-config-bad")
       const garden = await makeTestGarden(projectRoot)
       await expectError(
-        () => garden["resolveModuleConfigs"](garden.log),
+        () => garden["resolveModules"]({ log: garden.log }),
         (err) => {
           expect(stripAnsi(err.message)).to.equal(dedent`
           Missing include and/or exclude directives on modules with overlapping paths.
@@ -2123,17 +2123,19 @@ describe("Garden", () => {
     })
   })
 
-  describe("resolveModuleConfigs", () => {
+  describe("resolveModules", () => {
     it("should throw if a module references itself in a template string", async () => {
       const projectRoot = resolve(dataDir, "test-projects", "module-self-ref")
       const garden = await makeTestGarden(projectRoot)
+      const key = "${modules.module-a.version}"
       await expectError(
-        () => garden["resolveModuleConfigs"](garden.log),
+        () => garden["resolveModules"]({ log: garden.log }),
         (err) =>
-          expect(err.message).to.equal(
-            "Invalid template string ${modules.module-a.version}: " +
-              "Circular reference detected when resolving key modules.module-a (from modules.module-a)"
-          )
+          expect(stripAnsi(err.message)).to.equal(dedent`
+            Failed resolving one or more modules:
+
+            module-a: Invalid template string ${key}: Module module-a cannot reference itself.
+          `)
       )
     })
 
@@ -2141,7 +2143,7 @@ describe("Garden", () => {
       const projectRoot = resolve(dataDir, "test-project-ext-module-sources")
       const garden = await makeExtModuleSourcesGarden()
 
-      const module = await garden.resolveModuleConfig(garden.log, "module-a")
+      const module = await garden.resolveModule("module-a")
 
       expect(module!.path).to.equal(join(projectRoot, ".garden", "sources", "module", `module-a--${testGitUrlHash}`))
     })
@@ -2150,7 +2152,7 @@ describe("Garden", () => {
       const projectRoot = getDataDir("test-projects", "non-string-template-values")
       const garden = await makeTestGarden(projectRoot)
 
-      const module = await garden.resolveModuleConfig(garden.log, "module-a")
+      const module = await garden.resolveModule("module-a")
 
       // We template in the value for the module's allowPublish field to test this
       expect(module.allowPublish).to.equal(false)
@@ -2160,7 +2162,7 @@ describe("Garden", () => {
       const projectRoot = getDataDir("test-projects", "1067-module-ref-within-file")
       const garden = await makeTestGarden(projectRoot)
       // This should just complete successfully
-      await garden["resolveModuleConfigs"](garden.log)
+      await garden["resolveModules"]({ log: garden.log })
     })
 
     it("should throw if a module type is not recognized", async () => {
@@ -2170,11 +2172,13 @@ describe("Garden", () => {
       config.type = "foo"
 
       await expectError(
-        () => garden["resolveModuleConfigs"](garden.log),
+        () => garden["resolveModules"]({ log: garden.log }),
         (err) =>
-          expect(err.message).to.equal(
-            "Unrecognized module type 'foo' (defined at module-a/garden.yml). Are you missing a provider configuration?"
-          )
+          expect(stripAnsi(err.message)).to.equal(dedent`
+            Failed resolving one or more modules:
+
+            module-a: Unrecognized module type 'foo' (defined at module-a/garden.yml). Are you missing a provider configuration?
+          `)
       )
     })
 
@@ -2214,11 +2218,13 @@ describe("Garden", () => {
       }
 
       await expectError(
-        () => garden["resolveModuleConfigs"](garden.log),
+        () => garden["resolveModules"]({ log: garden.log }),
         (err) =>
-          expect(stripAnsi(err.message)).to.equal(deline`
-          Error validating module 'foo' (/garden.yml): key "bla" is not allowed at path [bla]
-        `)
+          expect(stripAnsi(err.message)).to.equal(dedent`
+            Failed resolving one or more modules:
+
+            foo: Error validating module 'foo' (/garden.yml): key "bla" is not allowed at path [bla]
+          `)
       )
     })
 
@@ -2265,11 +2271,13 @@ describe("Garden", () => {
       }
 
       await expectError(
-        () => garden["resolveModuleConfigs"](garden.log),
+        () => garden["resolveModules"]({ log: garden.log }),
         (err) =>
-          expect(stripAnsi(err.message)).to.equal(deline`
-          Error validating outputs for module 'foo' (/garden.yml): key .foo must be a string
-        `)
+          expect(stripAnsi(err.message)).to.equal(dedent`
+            Failed resolving one or more modules:
+
+            foo: Error validating outputs for module 'foo' (/garden.yml): key .foo must be a string
+          `)
       )
     })
   })
@@ -2337,12 +2345,13 @@ describe("Garden", () => {
       }
 
       await expectError(
-        () => garden["resolveModuleConfigs"](garden.log),
+        () => garden["resolveModules"]({ log: garden.log }),
         (err) =>
-          expect(stripAnsi(err.message)).to.equal(deline`
-          Error validating configuration for module 'foo'
-          (base schema from 'base' plugin) (/garden.yml): key .base is required
-        `)
+          expect(stripAnsi(err.message)).to.equal(dedent`
+            Failed resolving one or more modules:
+
+            foo: Error validating configuration for module 'foo' (base schema from 'base' plugin) (/garden.yml): key .base is required
+          `)
       )
     })
 
@@ -2404,12 +2413,13 @@ describe("Garden", () => {
       }
 
       await expectError(
-        () => garden["resolveModuleConfigs"](garden.log),
+        () => garden["resolveModules"]({ log: garden.log }),
         (err) =>
-          expect(stripAnsi(err.message)).to.equal(deline`
-          Error validating outputs for module 'foo' (base schema from 'base' plugin) (/garden.yml):
-          key .foo must be a string
-        `)
+          expect(stripAnsi(err.message)).to.equal(dedent`
+            Failed resolving one or more modules:
+
+            foo: Error validating outputs for module 'foo' (base schema from 'base' plugin) (/garden.yml): key .foo must be a string
+          `)
       )
     })
 
@@ -2489,12 +2499,13 @@ describe("Garden", () => {
         }
 
         await expectError(
-          () => garden["resolveModuleConfigs"](garden.log),
+          () => garden["resolveModules"]({ log: garden.log }),
           (err) =>
-            expect(stripAnsi(err.message)).to.equal(deline`
-            Error validating configuration for module 'foo'
-            (base schema from 'base-a' plugin) (/garden.yml): key .base is required
-          `)
+            expect(stripAnsi(err.message)).to.equal(dedent`
+              Failed resolving one or more modules:
+
+              foo: Error validating configuration for module 'foo' (base schema from 'base-a' plugin) (/garden.yml): key .base is required
+            `)
         )
       })
 
@@ -2568,12 +2579,13 @@ describe("Garden", () => {
         }
 
         await expectError(
-          () => garden["resolveModuleConfigs"](garden.log),
+          () => garden["resolveModules"]({ log: garden.log }),
           (err) =>
-            expect(stripAnsi(err.message)).to.equal(deline`
-            Error validating outputs for module 'foo' (base schema from 'base-a' plugin) (/garden.yml):
-            key .foo must be a string
-          `)
+            expect(stripAnsi(err.message)).to.equal(dedent`
+              Failed resolving one or more modules:
+
+              foo: Error validating outputs for module 'foo' (base schema from 'base-a' plugin) (/garden.yml): key .foo must be a string
+            `)
         )
       })
     })
@@ -2616,24 +2628,11 @@ describe("Garden", () => {
           config: projectConfigFoo,
         })
 
-        const moduleConfigs = await garden["resolveModuleConfigs"](garden.log)
+        const module = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
 
-        expect(deepOmitUndefined(moduleConfigs[0])).to.eql({
-          apiVersion: "garden.io/v0",
-          kind: "Module",
-          allowPublish: true,
-          build: { dependencies: [] },
-          disabled: false,
-          name: "foo",
-          outputs: {},
-          configPath: "/tmp",
-          path: "/tmp",
-          serviceConfigs: [],
-          spec: { foo: "bar", build: { dependencies: [] } },
-          testConfigs: [],
-          type: "foo",
-          taskConfigs: [],
-        })
+        expect(module.type).to.equal("foo")
+        expect(module.spec.foo).to.eql("bar")
+        expect(module.path).to.eql("/tmp")
       })
 
       it("should apply returned build dependency relationships", async () => {
@@ -2698,25 +2697,10 @@ describe("Garden", () => {
           },
         }
 
-        const moduleConfigs = await garden["resolveModuleConfigs"](garden.log)
-        const fooModule = deepOmitUndefined(findByName(moduleConfigs, "foo")!)
+        const module = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
 
-        expect(fooModule).to.eql({
-          apiVersion: "garden.io/v0",
-          kind: "Module",
-          allowPublish: false,
-          build: { dependencies: [{ name: "bar", copy: [] }] },
-          disabled: false,
-          name: "foo",
-          outputs: {},
-          path: "/tmp",
-          include: [],
-          serviceConfigs: [],
-          spec: { build: { dependencies: [] } },
-          testConfigs: [],
-          type: "foo",
-          taskConfigs: [],
-        })
+        expect(module).to.exist
+        expect(module.build).to.eql({ dependencies: [{ name: "bar", copy: [] }] })
       })
 
       it("should add modules before applying dependencies", async () => {
@@ -2772,33 +2756,19 @@ describe("Garden", () => {
           config: projectConfigFoo,
         })
 
-        const moduleConfigs = await garden["resolveModuleConfigs"](garden.log)
-        const fooModule = deepOmitUndefined(findByName(moduleConfigs, "foo")!)
+        const module = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
 
-        expect(fooModule).to.eql({
-          apiVersion: "garden.io/v0",
-          kind: "Module",
-          allowPublish: true,
-          build: { dependencies: [{ name: "bar", copy: [] }] },
-          disabled: false,
-          name: "foo",
-          outputs: {},
-          configPath: "/tmp",
-          path: "/tmp",
-          include: [],
-          serviceConfigs: [
-            {
-              name: "foo",
-              dependencies: ["bar"],
-              disabled: false,
-              hotReloadable: false,
-            },
-          ],
-          spec: { foo: "bar", build: { dependencies: [] } },
-          testConfigs: [],
-          type: "foo",
-          taskConfigs: [],
-        })
+        expect(module).to.exist
+        expect(module.build).to.eql({ dependencies: [{ name: "bar", copy: [] }] })
+        expect(module.serviceConfigs).to.eql([
+          {
+            name: "foo",
+            dependencies: ["bar"],
+            disabled: false,
+            hotReloadable: false,
+          },
+        ])
+        expect(module.spec).to.eql({ foo: "bar", build: { dependencies: [] } })
       })
 
       // TODO: Complete this once we've gotten rid of the <plugin-name>--<module-name> prefix business
@@ -2836,7 +2806,7 @@ describe("Garden", () => {
         })
 
         await expectError(
-          () => garden["resolveModuleConfigs"](garden.log),
+          () => garden["resolveModules"]({ log: garden.log }),
           (err) =>
             expect(stripAnsi(err.message)).to.equal(deline`
               Provider 'foo' added a build dependency by module 'foo' on 'bar' but module 'foo' could not be found.
@@ -2910,32 +2880,17 @@ describe("Garden", () => {
           },
         }
 
-        const moduleConfigs = await garden["resolveModuleConfigs"](garden.log)
-        const fooModule = deepOmitUndefined(findByName(moduleConfigs, "foo")!)
+        const module = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
 
-        expect(fooModule).to.eql({
-          apiVersion: "garden.io/v0",
-          kind: "Module",
-          allowPublish: false,
-          build: { dependencies: [] },
-          disabled: false,
-          name: "foo",
-          outputs: {},
-          path: "/tmp",
-          include: [],
-          serviceConfigs: [
-            {
-              name: "foo",
-              dependencies: ["bar"],
-              disabled: false,
-              hotReloadable: false,
-            },
-          ],
-          spec: { build: { dependencies: [] } },
-          testConfigs: [],
-          type: "foo",
-          taskConfigs: [],
-        })
+        expect(module).to.exist
+        expect(module.serviceConfigs).to.eql([
+          {
+            name: "foo",
+            dependencies: ["bar"],
+            disabled: false,
+            hotReloadable: false,
+          },
+        ])
       })
 
       it("should throw if a runtime dependency's `by` reference can't be resolved", async () => {
@@ -2990,7 +2945,7 @@ describe("Garden", () => {
         }
 
         await expectError(
-          () => garden["resolveModuleConfigs"](garden.log),
+          () => garden["resolveModules"]({ log: garden.log }),
           (err) =>
             expect(stripAnsi(err.message)).to.equal(deline`
               Provider 'foo' added a runtime dependency by 'bar' on 'foo'
@@ -3027,6 +2982,12 @@ describe("Garden", () => {
                     foo: "bar",
                     path: "/tmp",
                   },
+                  {
+                    kind: "Module",
+                    type: "foo",
+                    name: "bar",
+                    path: "/tmp",
+                  },
                 ],
               }
             },
@@ -3057,25 +3018,10 @@ describe("Garden", () => {
           config,
         })
 
-        const moduleConfigs = await garden["resolveModuleConfigs"](garden.log)
-        const fooModule = deepOmitUndefined(findByName(moduleConfigs, "foo")!)
+        const fooModule = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
 
-        expect(fooModule).to.eql({
-          apiVersion: "garden.io/v0",
-          kind: "Module",
-          allowPublish: true,
-          build: { dependencies: [{ name: "bar", copy: [] }] },
-          disabled: false,
-          name: "foo",
-          outputs: {},
-          configPath: "/tmp",
-          path: "/tmp",
-          serviceConfigs: [],
-          spec: { foo: "bar", build: { dependencies: [] } },
-          testConfigs: [],
-          type: "foo",
-          taskConfigs: [],
-        })
+        expect(fooModule).to.exist
+        expect(fooModule.build).to.eql({ dependencies: [{ name: "bar", copy: [] }] })
 
         // Then test wrong order and make sure it throws
         foo.dependencies = ["bar"]
@@ -3087,7 +3033,7 @@ describe("Garden", () => {
         })
 
         await expectError(
-          () => garden["resolveModuleConfigs"](garden.log),
+          () => garden["resolveModules"]({ log: garden.log }),
           (err) =>
             expect(stripAnsi(err.message)).to.equal(deline`
               Provider 'bar' added a build dependency by module 'foo' on 'bar' but module 'foo' could not be found.
@@ -3102,7 +3048,7 @@ describe("Garden", () => {
 
     it("should return result from cache if available", async () => {
       const garden = await makeTestGardenA()
-      const config = await garden.resolveModuleConfig(garden.log, "module-a")
+      const config = await garden.resolveModule("module-a")
       const version: ModuleVersion = {
         versionString: "banana",
         dependencyVersions: {},
@@ -3121,7 +3067,7 @@ describe("Garden", () => {
 
       garden.cache.delete(["moduleVersions", "module-b"])
 
-      const config = await garden.resolveModuleConfig(garden.log, "module-b")
+      const config = await garden.resolveModule("module-b")
       const resolveStub = td.replace(garden.vcs, "resolveVersion")
       const version: ModuleVersion = {
         versionString: "banana",
@@ -3138,7 +3084,7 @@ describe("Garden", () => {
 
     it("should ignore cache if force=true", async () => {
       const garden = await makeTestGardenA()
-      const config = await garden.resolveModuleConfig(garden.log, "module-a")
+      const config = await garden.resolveModule("module-a")
       const version: ModuleVersion = {
         versionString: "banana",
         dependencyVersions: {},

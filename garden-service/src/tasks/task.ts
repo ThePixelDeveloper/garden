@@ -63,13 +63,13 @@ export class TaskTask extends BaseTask {
   async getDependencies(): Promise<BaseTask[]> {
     const buildTasks = await BuildTask.factory({
       garden: this.garden,
+      graph: this.graph,
       log: this.log,
       module: this.task.module,
       force: this.forceBuild,
     })
 
-    const dg = await this.garden.getConfigGraph(this.log)
-    const deps = await dg.getDependencies({ nodeType: "run", name: this.getName(), recursive: false })
+    const deps = await this.graph.getDependencies({ nodeType: "run", name: this.getName(), recursive: false })
 
     const deployTasks = deps.deploy.map((service) => {
       return new DeployTask({

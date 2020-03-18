@@ -64,6 +64,7 @@ describe("DevCommand", () => {
     const completedTasks = garden.events.eventLog
       .filter((e) => e.name === "taskComplete")
       .map((e) => e.payload["key"])
+      .filter((key) => !key.startsWith("resolve-module."))
       .sort()
 
     return { promise, completedTasks }
@@ -97,6 +98,9 @@ describe("DevCommand", () => {
       "get-service-status.service-b",
       "get-service-status.service-c",
       "get-task-result.task-c",
+      "resolve-module-config.module-a",
+      "resolve-module-config.module-b",
+      "resolve-module-config.module-c",
       "resolve-provider.container",
       "resolve-provider.exec",
       "resolve-provider.test-plugin",

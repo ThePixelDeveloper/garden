@@ -14,7 +14,7 @@ import { every, flatten, intersection, merge, padEnd, union, uniqWith, without }
 import { BaseTask, TaskDefinitionError, TaskType } from "./tasks/base"
 
 import { LogEntry, LogEntryMetadata, TaskLogStatus } from "./logger/log-entry"
-import { toGardenError, GardenBaseError, InternalError } from "./exceptions"
+import { toGardenError, GardenBaseError } from "./exceptions"
 import { Garden } from "./garden"
 import { dedent } from "./util/string"
 import { defer, relationshipClasses, uuidv4 } from "./util/util"
@@ -24,6 +24,10 @@ import { Profile } from "./util/profiling"
 
 class TaskGraphError extends GardenBaseError {
   type = "task-graph"
+}
+
+class CircularDependenciesError extends GardenBaseError {
+  type = "circular-dependencies"
 }
 
 export interface TaskResult {
@@ -149,8 +153,8 @@ export class TaskGraph {
       const cycles = validationGraph.detectCircularDependencies()
       if (cycles.length > 0) {
         const description = validationGraph.cyclesToString(cycles)
-        const msg = `\nCircular task dependencies detected:\n\n${description}\n`
-        throw new InternalError(msg, { "circular-dependencies": description })
+        const msg = `Circular task dependencies detected:\n\n${description}\n`
+        throw new CircularDependenciesError(msg, { description, cycles })
       }
 
       const depNodes = await this.nodesWithDependencies(depTasks, validationGraph, unlimitedConcurrency)
@@ -881,8 +885,8 @@ export class TaskNodeBatch {
     const key = result.key
     if (this.remainingResultKeys.has(key)) {
       this.results[key] = result
+      this.remainingResultKeys.delete(key)
     }
-    this.remainingResultKeys.delete(key)
     for (const depResult of depResults) {
       if (this.remainingResultKeys.has(depResult.key)) {
         this.results[depResult.key] = depResult

@@ -100,6 +100,8 @@ import { AugmentGraphResult, AugmentGraphParams } from "./types/plugin/provider/
 import { DeployTask } from "./tasks/deploy"
 import { BuildDependencyConfig } from "./config/module"
 import { Profile } from "./util/profiling"
+import { ConfigGraph } from "./config-graph"
+import { ModuleConfigContext } from "./config/config-context"
 
 const maxArtifactLogLines = 5 // max number of artifacts to list in console after task+test runs
 
@@ -108,6 +110,7 @@ type TypeGuard = {
 }
 
 export interface DeployServicesParams {
+  graph: ConfigGraph
   log: LogEntry
   serviceNames?: string[]
   force?: boolean
@@ -551,13 +554,12 @@ export class ActionRouter implements TypeGuard {
           service,
         })
     )
-    const results = await this.garden.processTasks(tasks)
+    const results = await this.garden.processTasks(tasks, { throwOnError: true })
 
     return getServiceStatuses(results)
   }
 
-  async deployServices({ serviceNames, force = false, forceBuild = false, log }: DeployServicesParams) {
-    const graph = await this.garden.getConfigGraph(log)
+  async deployServices({ graph, serviceNames, force = false, forceBuild = false, log }: DeployServicesParams) {
     const services = await graph.getServices({ names: serviceNames })
 
     const tasks = services.map(
@@ -749,7 +751,7 @@ export class ActionRouter implements TypeGuard {
     const handlerParams = {
       ...(await this.commonParams(handler, (<any>params).log)),
       ...params,
-      module: omit(module, ["_ConfigType"]),
+      module: omit(module, ["_config"]),
     }
 
     log.silly(`Calling ${actionType} handler for module ${module.name}`)
@@ -768,7 +770,7 @@ export class ActionRouter implements TypeGuard {
     defaultHandler?: ServiceActionHandlers[T]
   }) {
     let { log, service, runtimeContext } = params
-    let module = omit(service.module, ["_ConfigType"])
+    let module = omit(service.module, ["_config"])
 
     log.silly(`Getting ${actionType} handler for service ${service.name}`)
 
@@ -786,12 +788,23 @@ export class ActionRouter implements TypeGuard {
 
     if (!runtimeContextIsEmpty && (await getRuntimeTemplateReferences(module)).length > 0) {
       log.silly(`Resolving runtime template strings for service '${service.name}'`)
-      const configContext = await this.garden.getModuleConfigContext(runtimeContext)
-      // We first allow partial resolution on the full config graph, and then resolve the service config itself
-      // below with allowPartial=false to ensure all required strings are resolved.
-      const graph = await this.garden.getConfigGraph(log, { configContext, allowPartial: true })
+
+      const providers = await this.garden.resolveProviders()
+      const graph = await this.garden.getConfigGraph(log, runtimeContext)
       service = await graph.getService(service.name)
       module = service.module
+
+      const modules = await graph.getModules()
+      const configContext = new ModuleConfigContext({
+        garden: this.garden,
+        resolvedProviders: providers,
+        variables: this.garden.variables,
+        dependencyConfigs: modules,
+        dependencyVersions: fromPairs(modules.map((m) => [m.name, m.version])),
+        runtimeContext,
+      })
+
+      // Set allowPartial=false to ensure all required strings are resolved.
       service.config = await resolveTemplateStrings(service.config, configContext, { allowPartial: false })
     }
 
@@ -822,7 +835,7 @@ export class ActionRouter implements TypeGuard {
   }) {
     let { task, log } = params
     const runtimeContext = params["runtimeContext"] as RuntimeContext | undefined
-    let module = omit(task.module, ["_ConfigType"])
+    let module = omit(task.module, ["_config"])
 
     log.silly(`Getting ${actionType} handler for task ${module.name}.${task.name}`)
 
@@ -836,12 +849,23 @@ export class ActionRouter implements TypeGuard {
     // Resolve ${runtime.*} template strings if needed.
     if (runtimeContext && (await getRuntimeTemplateReferences(module)).length > 0) {
       log.silly(`Resolving runtime template strings for task '${task.name}'`)
-      const configContext = await this.garden.getModuleConfigContext(runtimeContext)
-      // We first allow partial resolution on the full config graph, and then resolve the task config itself
-      // below with allowPartial=false to ensure all required strings are resolved.
-      const graph = await this.garden.getConfigGraph(log, { configContext, allowPartial: true })
+
+      const providers = await this.garden.resolveProviders()
+      const graph = await this.garden.getConfigGraph(log, runtimeContext)
       task = await graph.getTask(task.name)
       module = task.module
+
+      const modules = await graph.getModules()
+      const configContext = new ModuleConfigContext({
+        garden: this.garden,
+        resolvedProviders: providers,
+        variables: this.garden.variables,
+        dependencyConfigs: modules,
+        dependencyVersions: fromPairs(modules.map((m) => [m.name, m.version])),
+        runtimeContext,
+      })
+
+      // Set allowPartial=false to ensure all required strings are resolved.
       task.config = await resolveTemplateStrings(task.config, configContext, { allowPartial: false })
     }
 

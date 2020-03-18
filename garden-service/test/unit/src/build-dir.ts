@@ -11,9 +11,8 @@ import { join } from "path"
 import { pathExists, readdir, createFile } from "fs-extra"
 import { expect } from "chai"
 import { BuildTask } from "../../../src/tasks/build"
-import { makeTestGarden, dataDir, expectError, getDataDir } from "../../helpers"
+import { makeTestGarden, dataDir, expectError, getDataDir, TestGarden } from "../../helpers"
 import { getConfigFilePath } from "../../../src/util/fs"
-import { Garden } from "../../../src/garden"
 import { BuildDir } from "../../../src/build-dir"
 
 /*
@@ -33,7 +32,7 @@ const makeGarden = async () => {
 }
 
 describe("BuildDir", () => {
-  let garden: Garden
+  let garden: TestGarden
 
   before(async () => {
     garden = await makeGarden()
@@ -54,7 +53,7 @@ describe("BuildDir", () => {
   })
 
   it("should ensure that a module's build subdir exists before returning from buildPath", async () => {
-    const moduleA = await garden.resolveModuleConfig(garden.log, "module-a")
+    const moduleA = await garden.resolveModule("module-a")
     const buildPath = await garden.buildDir.buildPath(moduleA)
     expect(await pathExists(buildPath)).to.eql(true)
   })
@@ -218,6 +217,7 @@ describe("BuildDir", () => {
         (module) =>
           new BuildTask({
             garden,
+            graph,
             log,
             module,
             force: true,
@@ -227,8 +227,8 @@ describe("BuildDir", () => {
 
       await garden.processTasks(tasks)
 
-      const moduleD = await garden.resolveModuleConfig(garden.log, "module-d")
-      const moduleF = await garden.resolveModuleConfig(garden.log, "module-f")
+      const moduleD = await garden.resolveModule("module-d")
+      const moduleF = await garden.resolveModule("module-f")
       const buildDirD = await garden.buildDir.buildPath(moduleD)
       const buildDirF = await garden.buildDir.buildPath(moduleF)
 

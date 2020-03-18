@@ -168,7 +168,7 @@ describe("task-graph", () => {
       const taskB = new TestTask(garden, "b", false, { dependencies: [taskA] })
       const taskC = new TestTask(garden, "c", false, { dependencies: [taskB] })
       taskA["dependencies"] = [taskC]
-      const errorMsg = "\nCircular task dependencies detected:\n\nb <- a <- c <- b\n"
+      const errorMsg = "Circular task dependencies detected:\n\nb <- a <- c <- b\n"
 
       await expectError(
         () => graph.process([taskB]),

@@ -9,9 +9,8 @@
 import Bluebird from "bluebird"
 import toposort from "toposort"
 import { flatten, pick, uniq, sortBy, pickBy } from "lodash"
-import { Garden } from "./garden"
-import { BuildDependencyConfig, ModuleConfig } from "./config/module"
-import { Module, getModuleKey, moduleFromConfig, moduleNeedsBuild } from "./types/module"
+import { BuildDependencyConfig } from "./config/module"
+import { Module, getModuleKey, moduleNeedsBuild } from "./types/module"
 import { Service, serviceFromConfig } from "./types/service"
 import { Task, taskFromConfig } from "./types/task"
 import { TestConfig } from "./config/test"
@@ -83,7 +82,7 @@ export type DependencyGraph = { [key: string]: DependencyGraphNode }
  */
 export class ConfigGraph {
   private dependencyGraph: DependencyGraph
-  private moduleConfigs: { [key: string]: ModuleConfig }
+  private modules: { [key: string]: Module }
 
   private serviceConfigs: {
     [key: string]: EntityConfigEntry<"service", ServiceConfig>
@@ -95,21 +94,20 @@ export class ConfigGraph {
     [key: string]: EntityConfigEntry<"test", TestConfig>
   }
 
-  constructor(private garden: Garden, moduleConfigs: ModuleConfig[], moduleTypes: ModuleTypeMap) {
-    this.garden = garden
+  constructor(modules: Module[], moduleTypes: ModuleTypeMap) {
     this.dependencyGraph = {}
-    this.moduleConfigs = {}
+    this.modules = {}
     this.serviceConfigs = {}
     this.taskConfigs = {}
     this.testConfigs = {}
 
     // Add nodes to graph and validate
-    for (const moduleConfig of moduleConfigs) {
-      const moduleKey = this.keyForModule(moduleConfig)
-      this.moduleConfigs[moduleKey] = moduleConfig
+    for (const module of modules) {
+      const moduleKey = this.keyForModule(module)
+      this.modules[moduleKey] = module
 
       // Add services
-      for (const serviceConfig of moduleConfig.serviceConfigs) {
+      for (const serviceConfig of module.serviceConfigs) {
         const serviceName = serviceConfig.name
 
         if (this.taskConfigs[serviceName]) {
@@ -134,7 +132,7 @@ export class ConfigGraph {
         // Make sure service source modules are added as build dependencies for the module
         const { sourceModuleName } = serviceConfig
         if (sourceModuleName) {
-          moduleConfig.build.dependencies.push({
+          module.build.dependencies.push({
             name: sourceModuleName,
             copy: [],
           })
@@ -144,7 +142,7 @@ export class ConfigGraph {
       }
 
       // Add tasks
-      for (const taskConfig of moduleConfig.taskConfigs) {
+      for (const taskConfig of module.taskConfigs) {
         const taskName = taskConfig.name
 
         if (this.serviceConfigs[taskName]) {
@@ -170,22 +168,18 @@ export class ConfigGraph {
       }
     }
 
-    const missingDepsError = detectMissingDependencies(
-      Object.values(this.moduleConfigs),
-      Object.keys(this.serviceConfigs),
-      Object.keys(this.taskConfigs)
-    )
+    const missingDepsError = detectMissingDependencies(Object.values(this.modules))
 
     // Add relations between nodes
-    for (const moduleConfig of moduleConfigs) {
-      const type = moduleTypes[moduleConfig.type]
-      const needsBuild = moduleNeedsBuild(moduleConfig, type)
+    for (const module of modules) {
+      const type = moduleTypes[module.type]
+      const needsBuild = moduleNeedsBuild(module, type)
 
-      const moduleKey = this.keyForModule(moduleConfig)
-      this.moduleConfigs[moduleKey] = moduleConfig
+      const moduleKey = this.keyForModule(module)
+      this.modules[moduleKey] = module
 
       const addBuildDeps = (node: DependencyGraphNode) => {
-        for (const buildDep of moduleConfig.build.dependencies) {
+        for (const buildDep of module.build.dependencies) {
           const buildDepKey = getModuleKey(buildDep.name, buildDep.plugin)
           this.addRelation({
             dependant: node,
@@ -201,7 +195,7 @@ export class ConfigGraph {
       }
 
       // Service dependencies
-      for (const serviceConfig of moduleConfig.serviceConfigs) {
+      for (const serviceConfig of module.serviceConfigs) {
         const serviceNode = this.getNode("deploy", serviceConfig.name, moduleKey)
 
         if (needsBuild) {
@@ -223,7 +217,7 @@ export class ConfigGraph {
       }
 
       // Task dependencies
-      for (const taskConfig of moduleConfig.taskConfigs) {
+      for (const taskConfig of module.taskConfigs) {
         const taskNode = this.getNode("run", taskConfig.name, moduleKey)
 
         if (needsBuild) {
@@ -245,8 +239,8 @@ export class ConfigGraph {
       }
 
       // Test dependencies
-      for (const testConfig of moduleConfig.testConfigs) {
-        const testConfigName = makeTestTaskName(moduleConfig.name, testConfig.name)
+      for (const testConfig of module.testConfigs) {
+        const testConfigName = makeTestTaskName(module.name, testConfig.name)
 
         this.testConfigs[testConfigName] = { type: "test", moduleKey, config: testConfig }
 
@@ -288,8 +282,8 @@ export class ConfigGraph {
   }
 
   // Convenience method used in the constructor above.
-  keyForModule(config: ModuleConfig | BuildDependencyConfig) {
-    return getModuleKey(config.name, config.plugin)
+  keyForModule(module: Module | BuildDependencyConfig) {
+    return getModuleKey(module.name, module.plugin)
   }
 
   private addRuntimeRelation(node: DependencyGraphNode, depName: string) {
@@ -311,7 +305,7 @@ export class ConfigGraph {
   }
 
   private isDisabled(dep: EntityConfigEntry<any, any>) {
-    const moduleConfig = this.moduleConfigs[dep.moduleKey]
+    const moduleConfig = this.modules[dep.moduleKey]
     return moduleConfig.disabled || dep.config.disabled
   }
 
@@ -340,10 +334,8 @@ export class ConfigGraph {
     Returns all modules defined in this configuration graph, or the ones specified.
    */
   async getModules({ names, includeDisabled = false }: { names?: string[]; includeDisabled?: boolean } = {}) {
-    const moduleConfigs = includeDisabled ? this.moduleConfigs : pickBy(this.moduleConfigs, (c) => !c.disabled)
-    const configs = Object.values(names ? pickKeys(moduleConfigs, names, "module") : moduleConfigs)
-
-    return Bluebird.map(configs, (config) => moduleFromConfig(this.garden, this, config))
+    const modules = includeDisabled ? this.modules : pickBy(this.modules, (c) => !c.disabled)
+    return Object.values(names ? pickKeys(modules, names, "module") : modules)
   }
 
   /*

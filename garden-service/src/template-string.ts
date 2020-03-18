@@ -147,6 +147,11 @@ export async function getRuntimeTemplateReferences<T extends object>(obj: T) {
   return refs.filter((ref) => ref[0] === "runtime")
 }
 
+export async function getModuleTemplateReferences<T extends object>(obj: T) {
+  const refs = await collectTemplateReferences(obj)
+  return refs.filter((ref) => ref[0] === "modules" && ref.length > 1)
+}
+
 async function buildBinaryExpression(head: any, tail: any) {
   return Bluebird.reduce(
     tail,

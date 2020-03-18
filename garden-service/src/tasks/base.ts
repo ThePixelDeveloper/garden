@@ -25,6 +25,8 @@ export type TaskType =
   | "get-task-result"
   | "hot-reload"
   | "publish"
+  | "resolve-module-config"
+  | "resolve-module"
   | "resolve-provider"
   | "stage-build"
   | "task"

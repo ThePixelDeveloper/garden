@@ -41,6 +41,7 @@ export async function getModuleWatchTasks({
   if (intersection(module.serviceNames, hotReloadServiceNames).length === 0) {
     buildTasks = await BuildTask.factory({
       garden,
+      graph,
       log,
       module,
       force: true,
@@ -53,6 +54,7 @@ export async function getModuleWatchTasks({
       (m) =>
         BuildTask.factory({
           garden,
+          graph,
           log,
           module: m,
           force: false,

@@ -187,6 +187,7 @@ export async function getDevCommandInitialTasks({
       // Build the module (in case there are no tests, tasks or services here that need to be run)
       const buildTasks = await BuildTask.factory({
         garden,
+        graph,
         log,
         module,
         force: false,

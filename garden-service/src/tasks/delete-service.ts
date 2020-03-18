@@ -39,6 +39,7 @@ export class DeleteServiceTask extends BaseTask {
   async getDependencies() {
     const stageBuildTask = new StageBuildTask({
       garden: this.garden,
+      graph: this.graph,
       log: this.log,
       module: this.service.module,
       force: this.force,

@@ -132,7 +132,7 @@ function getKubernetesService(pvcModule: PersistentVolumeClaimModule): Kubernete
 
   const module: KubernetesModule = {
     ...pvcModule,
-    _ConfigType: config,
+    _config: config,
     ...config,
     spec: {
       ...pvcModule.spec,

@@ -30,7 +30,7 @@ import { mapValues, fromPairs } from "lodash"
 import { ModuleVersion } from "../src/vcs/vcs"
 import { GARDEN_SERVICE_ROOT, LOCAL_CONFIG_FILENAME } from "../src/constants"
 import { EventBus, Events } from "../src/events"
-import { ValueOf, exec } from "../src/util/util"
+import { ValueOf, exec, findByName, getNames } from "../src/util/util"
 import { LogEntry } from "../src/logger/log-entry"
 import timekeeper = require("timekeeper")
 import { GLOBAL_OPTIONS, GlobalOptions } from "../src/cli/cli"
@@ -47,6 +47,7 @@ import { ConfigureProviderParams } from "../src/types/plugin/provider/configureP
 import { ActionRouter } from "../src/actions"
 import { ParameterValues } from "../src/commands/base"
 import stripAnsi from "strip-ansi"
+import { GardenBaseError } from "../src/exceptions"
 
 export const dataDir = resolve(GARDEN_SERVICE_ROOT, "test", "data")
 export const examplesDir = resolve(GARDEN_SERVICE_ROOT, "..", "examples")
@@ -61,6 +62,10 @@ export const testModuleVersion: ModuleVersion = {
 // All test projects use this git URL
 export const testGitUrl = "https://my-git-server.com/my-repo.git#master"
 export const testGitUrlHash = hashRepoUrl(testGitUrl)
+
+export class TestError extends GardenBaseError {
+  type = "_test"
+}
 
 export function getDataDir(...names: string[]) {
   return resolve(dataDir, ...names)
@@ -340,6 +345,21 @@ export class TestGarden extends Garden {
   setModuleConfigs(moduleConfigs: ModuleConfig[]) {
     this.modulesScanned = true
     this.moduleConfigs = keyBy(moduleConfigs, "name")
+  }
+
+  /**
+   * Helper to get a single module config. We don't put this on the Garden class because it is highly inefficient
+   * and not advisable except for testing.
+   */
+  async resolveModule(name: string) {
+    const modules = await this.resolveModules({ log: this.log })
+    const config = findByName(modules, name)
+
+    if (!config) {
+      throw new TestError(`Could not find module config ${name}`, { name, available: getNames(modules) })
+    }
+
+    return config
   }
 }
 

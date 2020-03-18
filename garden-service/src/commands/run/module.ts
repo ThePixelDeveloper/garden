@@ -96,6 +96,7 @@ export class RunModuleCommand extends Command<Args, Opts> {
 
     const buildTasks = await BuildTask.factory({
       garden,
+      graph,
       log,
       module,
       force: opts["force-build"],

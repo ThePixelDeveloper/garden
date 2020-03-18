@@ -133,6 +133,7 @@ export class DeployTask extends BaseTask {
 
       const buildTasks = await BuildTask.factory({
         garden: this.garden,
+        graph: this.graph,
         log: this.log,
         module: this.service.module,
         force: this.forceBuild,

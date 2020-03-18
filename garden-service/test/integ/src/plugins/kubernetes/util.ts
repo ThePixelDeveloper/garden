@@ -59,7 +59,7 @@ describe("util", () => {
   async function buildModules() {
     const modules = await helmGraph.getModules()
     const tasks = modules.map(
-      (module) => new BuildTask({ garden: helmGarden, log, module, force: false, _guard: true })
+      (module) => new BuildTask({ garden: helmGarden, graph: helmGraph, log, module, force: false, _guard: true })
     )
     const results = await helmGarden.processTasks(tasks)
 

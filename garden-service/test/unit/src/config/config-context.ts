@@ -15,14 +15,14 @@ import {
   ProjectConfigContext,
   ModuleConfigContext,
 } from "../../../../src/config/config-context"
-import { expectError, makeTestGardenA } from "../../../helpers"
-import { Garden } from "../../../../src/garden"
+import { expectError, makeTestGardenA, TestGarden } from "../../../helpers"
 import { join } from "path"
 import { joi } from "../../../../src/config/common"
 import { prepareRuntimeContext } from "../../../../src/runtime-context"
 import { Service } from "../../../../src/types/service"
 import stripAnsi = require("strip-ansi")
 import { resolveTemplateString } from "../../../../src/template-string"
+import { fromPairs } from "lodash"
 
 type TestValue = string | ConfigContext | TestValues | TestValueFunction
 type TestValueFunction = () => TestValue | Promise<TestValue>
@@ -273,18 +273,21 @@ describe("ProjectConfigContext", () => {
 })
 
 describe("ModuleConfigContext", () => {
-  let garden: Garden
+  let garden: TestGarden
   let c: ModuleConfigContext
 
   before(async () => {
     garden = await makeTestGardenA()
-    await garden.scanModules()
-    c = new ModuleConfigContext(
+    const graph = await garden.getConfigGraph(garden.log)
+    const modules = await graph.getModules()
+
+    c = new ModuleConfigContext({
       garden,
-      await garden.resolveProviders(),
-      garden.variables,
-      Object.values((<any>garden).moduleConfigs)
-    )
+      resolvedProviders: await garden.resolveProviders(),
+      variables: garden.variables,
+      dependencyConfigs: modules,
+      dependencyVersions: fromPairs(modules.map((m) => [m.name, m.version])),
+    })
   })
 
   it("should should resolve local env variables", async () => {
@@ -313,7 +316,7 @@ describe("ModuleConfigContext", () => {
   })
 
   it("should should resolve the version of a module", async () => {
-    const config = await garden.resolveModuleConfig(garden.log, "module-a")
+    const config = await garden.resolveModule("module-a")
     const { versionString } = await garden.resolveVersion(config, [])
     expect(await c.resolve({ key: ["modules", "module-a", "version"], nodePath: [], opts: {} })).to.eql({
       resolved: versionString,
@@ -365,6 +368,7 @@ describe("ModuleConfigContext", () => {
 
     before(async () => {
       const graph = await garden.getConfigGraph(garden.log)
+      const modules = await graph.getModules()
       serviceA = await graph.getService("service-a")
       const serviceB = await graph.getService("service-b")
       const taskB = await graph.getTask("task-b")
@@ -401,13 +405,14 @@ describe("ModuleConfigContext", () => {
         },
       })
 
-      withRuntime = new ModuleConfigContext(
+      withRuntime = new ModuleConfigContext({
         garden,
-        await garden.resolveProviders(),
-        garden.variables,
-        Object.values((<any>garden).moduleConfigs),
-        runtimeContext
-      )
+        resolvedProviders: await garden.resolveProviders(),
+        variables: garden.variables,
+        dependencyConfigs: modules,
+        dependencyVersions: fromPairs(modules.map((m) => [m.name, m.version])),
+        runtimeContext,
+      })
     })
 
     it("should resolve service outputs", async () => {

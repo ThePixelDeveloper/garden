@@ -88,8 +88,7 @@ export class TestTask extends BaseTask {
       return []
     }
 
-    const dg = this.graph
-    const deps = await dg.getDependencies({
+    const deps = await this.graph.getDependencies({
       nodeType: "test",
       name: this.getName(),
       recursive: false,
@@ -98,6 +97,7 @@ export class TestTask extends BaseTask {
 
     const buildTasks = await BuildTask.factory({
       garden: this.garden,
+      graph: this.graph,
       log: this.log,
       module: this.module,
       force: this.forceBuild,

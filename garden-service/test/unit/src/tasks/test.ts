@@ -15,6 +15,7 @@ import { dataDir, makeTestGarden } from "../../../helpers"
 import { LogEntry } from "../../../../src/logger/log-entry"
 import { ConfigGraph } from "../../../../src/config-graph"
 import { ModuleVersion } from "../../../../src/vcs/vcs"
+import { findByName } from "../../../../src/util/util"
 
 describe("TestTask", () => {
   let garden: Garden
@@ -47,8 +48,10 @@ describe("TestTask", () => {
       files: [],
     }
 
-    const configA = await garden.resolveModuleConfig(garden.log, "module-a")
-    const configB = await garden.resolveModuleConfig(garden.log, "module-b")
+    const modules = await garden["resolveModules"]({ log: garden.log })
+
+    const configA = findByName(modules, "module-a")!
+    const configB = findByName(modules, "module-b")!
 
     td.when(resolveVersion(configA, [])).thenResolve(versionA)
     td.when(resolveVersion(configB, [])).thenResolve(versionB)
