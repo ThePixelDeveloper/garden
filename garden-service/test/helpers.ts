@@ -48,6 +48,8 @@ import { ActionRouter } from "../src/actions"
 import { ParameterValues } from "../src/commands/base"
 import stripAnsi from "strip-ansi"
 import { GardenBaseError } from "../src/exceptions"
+import { RuntimeContext } from "../src/runtime-context"
+import { Module } from "../src/types/module"
 
 export const dataDir = resolve(GARDEN_SERVICE_ROOT, "test", "data")
 export const examplesDir = resolve(GARDEN_SERVICE_ROOT, "..", "examples")
@@ -345,6 +347,15 @@ export class TestGarden extends Garden {
   setModuleConfigs(moduleConfigs: ModuleConfig[]) {
     this.modulesScanned = true
     this.moduleConfigs = keyBy(moduleConfigs, "name")
+  }
+
+  /**
+   * Returns module configs that are registered in this context, fully resolved and configured.
+   * Scans for modules in the project root and remote/linked sources if it hasn't already been done.
+   */
+  async resolveModules({ log, runtimeContext }: { log: LogEntry; runtimeContext?: RuntimeContext }): Promise<Module[]> {
+    const graph = await this.getConfigGraph(log, runtimeContext)
+    return graph.getModules()
   }
 
   /**

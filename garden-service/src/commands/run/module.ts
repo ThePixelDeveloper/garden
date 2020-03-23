@@ -84,7 +84,7 @@ export class RunModuleCommand extends Command<Args, Opts> {
     const moduleName = args.module
 
     const graph = await garden.getConfigGraph(log)
-    const module = await graph.getModule(moduleName)
+    const module = graph.getModule(moduleName)
 
     const msg = args.arguments
       ? `Running module ${chalk.white(moduleName)} with arguments ${chalk.white(args.arguments.join(" "))}`
@@ -103,7 +103,7 @@ export class RunModuleCommand extends Command<Args, Opts> {
     })
     await garden.processTasks(buildTasks)
 
-    const dependencies = await graph.getDependencies({ nodeType: "build", name: module.name, recursive: false })
+    const dependencies = graph.getDependencies({ nodeType: "build", name: module.name, recursive: false })
 
     const runtimeContext = await prepareRuntimeContext({
       garden,

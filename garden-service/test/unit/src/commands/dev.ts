@@ -123,7 +123,7 @@ describe("DevCommand", () => {
     const garden = await makeTestGardenA()
     const log = garden.log
     const graph = await garden.getConfigGraph(log)
-    const modules = await graph.getModules()
+    const modules = graph.getModules()
 
     const initialTasks = await getDevCommandInitialTasks({
       garden,
@@ -289,7 +289,7 @@ describe("getDevCommandWatchTasks", () => {
       garden,
       log,
       updatedGraph: graph,
-      module: await graph.getModule("module-b"),
+      module: graph.getModule("module-b"),
       hotReloadServiceNames: [],
       testNames: undefined,
       skipTests: false,

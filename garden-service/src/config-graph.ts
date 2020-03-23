@@ -6,7 +6,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import Bluebird from "bluebird"
 import toposort from "toposort"
 import { flatten, pick, uniq, sortBy, pickBy } from "lodash"
 import { BuildDependencyConfig } from "./config/module"
@@ -312,28 +311,28 @@ export class ConfigGraph {
   /**
    * Returns the Service with the specified name. Throws error if it doesn't exist.
    */
-  async getModule(name: string, includeDisabled?: boolean): Promise<Module> {
-    return (await this.getModules({ names: [name], includeDisabled }))[0]
+  getModule(name: string, includeDisabled?: boolean): Module {
+    return this.getModules({ names: [name], includeDisabled })[0]
   }
 
   /**
    * Returns the Service with the specified name. Throws error if it doesn't exist.
    */
-  async getService(name: string, includeDisabled?: boolean): Promise<Service> {
-    return (await this.getServices({ names: [name], includeDisabled }))[0]
+  getService(name: string, includeDisabled?: boolean): Service {
+    return this.getServices({ names: [name], includeDisabled })[0]
   }
 
   /**
    * Returns the Task with the specified name. Throws error if it doesn't exist.
    */
-  async getTask(name: string, includeDisabled?: boolean): Promise<Task> {
-    return (await this.getTasks({ names: [name], includeDisabled }))[0]
+  getTask(name: string, includeDisabled?: boolean): Task {
+    return this.getTasks({ names: [name], includeDisabled })[0]
   }
 
   /*
     Returns all modules defined in this configuration graph, or the ones specified.
    */
-  async getModules({ names, includeDisabled = false }: { names?: string[]; includeDisabled?: boolean } = {}) {
+  getModules({ names, includeDisabled = false }: { names?: string[]; includeDisabled?: boolean } = {}) {
     const modules = includeDisabled ? this.modules : pickBy(this.modules, (c) => !c.disabled)
     return Object.values(names ? pickKeys(modules, names, "module") : modules)
   }
@@ -341,26 +340,24 @@ export class ConfigGraph {
   /*
     Returns all services defined in this configuration graph, or the ones specified.
    */
-  async getServices({ names, includeDisabled = false }: { names?: string[]; includeDisabled?: boolean } = {}) {
+  getServices({ names, includeDisabled = false }: { names?: string[]; includeDisabled?: boolean } = {}) {
     const serviceConfigs = includeDisabled
       ? this.serviceConfigs
       : pickBy(this.serviceConfigs, (s) => !this.isDisabled(s))
 
     const configs = Object.values(names ? pickKeys(serviceConfigs, names, "service") : serviceConfigs)
 
-    return Bluebird.map(configs, async (c) =>
-      serviceFromConfig(this, await this.getModule(c.moduleKey, true), c.config)
-    )
+    return configs.map((c) => serviceFromConfig(this, this.getModule(c.moduleKey, true), c.config))
   }
 
   /*
     Returns all tasks defined in this configuration graph, or the ones specified.
    */
-  async getTasks({ names, includeDisabled = false }: { names?: string[]; includeDisabled?: boolean } = {}) {
+  getTasks({ names, includeDisabled = false }: { names?: string[]; includeDisabled?: boolean } = {}) {
     const taskConfigs = includeDisabled ? this.taskConfigs : pickBy(this.taskConfigs, (t) => !this.isDisabled(t))
     const configs = Object.values(names ? pickKeys(taskConfigs, names, "task") : taskConfigs)
 
-    return Bluebird.map(configs, async (c) => taskFromConfig(await this.getModule(c.moduleKey, true), c.config))
+    return configs.map((c) => taskFromConfig(this.getModule(c.moduleKey, true), c.config))
   }
 
   /*
@@ -371,10 +368,10 @@ export class ConfigGraph {
   /**
    * Returns the set union of modules with the set union of their dependants (across all dependency types, recursively).
    */
-  async withDependantModules(modules: Module[]): Promise<Module[]> {
-    const dependants = flatten(await Bluebird.map(modules, (m) => this.getDependantsForModule(m, true)))
+  withDependantModules(modules: Module[]): Module[] {
+    const dependants = modules.flatMap((m) => this.getDependantsForModule(m, true))
     // We call getModules to ensure that the returned modules have up-to-date versions.
-    const dependantModules = await this.modulesForRelations(await this.mergeRelations(...dependants))
+    const dependantModules = this.modulesForRelations(this.mergeRelations(...dependants))
     return this.getModules({ names: uniq(modules.concat(dependantModules).map((m) => m.name)), includeDisabled: true })
   }
 
@@ -383,7 +380,7 @@ export class ConfigGraph {
    * Includes the services and tasks contained in the given module, but does _not_ contain the build node for the
    * module itself.
    */
-  async getDependantsForModule(module: Module, recursive: boolean): Promise<DependencyRelations> {
+  getDependantsForModule(module: Module, recursive: boolean): DependencyRelations {
     return this.getDependants({ nodeType: "build", name: module.name, recursive })
   }
 
@@ -394,7 +391,7 @@ export class ConfigGraph {
    *
    * If recursive = true, also includes those dependencies' dependencies, etc.
    */
-  async getDependencies({
+  getDependencies({
     nodeType,
     name,
     recursive,
@@ -404,7 +401,7 @@ export class ConfigGraph {
     name: string
     recursive: boolean
     filterFn?: DependencyRelationFilterFn
-  }): Promise<DependencyRelations> {
+  }): DependencyRelations {
     return this.toRelations(this.getDependencyNodes({ nodeType, name, recursive, filterFn }))
   }
 
@@ -415,7 +412,7 @@ export class ConfigGraph {
    *
    * If recursive = true, also includes those dependants' dependants, etc.
    */
-  async getDependants({
+  getDependants({
     nodeType,
     name,
     recursive,
@@ -425,7 +422,7 @@ export class ConfigGraph {
     name: string
     recursive: boolean
     filterFn?: DependencyRelationFilterFn
-  }): Promise<DependencyRelations> {
+  }): DependencyRelations {
     return this.toRelations(this.getDependantNodes({ nodeType, name, recursive, filterFn }))
   }
 
@@ -433,7 +430,7 @@ export class ConfigGraph {
    * Same as getDependencies above, but returns the set union of the dependencies of the nodes in the graph
    * having type = nodeType and name = name (computed recursively or shallowly for all).
    */
-  async getDependenciesForMany({
+  getDependenciesForMany({
     nodeType,
     names,
     recursive,
@@ -443,7 +440,7 @@ export class ConfigGraph {
     names: string[]
     recursive: boolean
     filterFn?: DependencyRelationFilterFn
-  }): Promise<DependencyRelations> {
+  }): DependencyRelations {
     return this.toRelations(
       flatten(names.map((name) => this.getDependencyNodes({ nodeType, name, recursive, filterFn })))
     )
@@ -453,7 +450,7 @@ export class ConfigGraph {
    * Same as getDependants above, but returns the set union of the dependants of the nodes in the graph
    * having type = nodeType and name = name (computed recursively or shallowly for all).
    */
-  async getDependantsForMany({
+  getDependantsForMany({
     nodeType,
     names,
     recursive,
@@ -463,7 +460,7 @@ export class ConfigGraph {
     names: string[]
     recursive: boolean
     filterFn?: DependencyRelationFilterFn
-  }): Promise<DependencyRelations> {
+  }): DependencyRelations {
     return this.toRelations(
       flatten(names.map((name) => this.getDependantNodes({ nodeType, name, recursive, filterFn })))
     )
@@ -472,7 +469,7 @@ export class ConfigGraph {
   /**
    * Returns the set union for each node type across relationArr (i.e. concatenates and deduplicates for each key).
    */
-  async mergeRelations(...relationArr: DependencyRelations[]): Promise<DependencyRelations> {
+  mergeRelations(...relationArr: DependencyRelations[]): DependencyRelations {
     const names = {}
     for (const type of ["build", "run", "deploy", "test"]) {
       names[type] = uniqByName(flatten(relationArr.map((r) => r[type]))).map((r) => r.name)
@@ -489,13 +486,13 @@ export class ConfigGraph {
   /**
    * Returns the (unique by name) list of modules represented in relations.
    */
-  private async modulesForRelations(relations: DependencyRelations): Promise<Module[]> {
+  private modulesForRelations(relations: DependencyRelations): Module[] {
     const moduleNames = uniq(
       flatten([
         relations.build,
         relations.deploy.map((s) => s.module),
         relations.run.map((w) => w.module),
-        await this.getModules({ names: relations.test.map((t) => this.testConfigs[t.name].moduleKey) }),
+        this.getModules({ names: relations.test.map((t) => this.testConfigs[t.name].moduleKey) }),
       ]).map((m) => m.name)
     )
     // We call getModules to ensure that the returned modules have up-to-date versions.
@@ -506,29 +503,26 @@ export class ConfigGraph {
    * Given the provided lists of build and runtime (service/task) dependencies, return a list of all
    * modules required to satisfy those dependencies.
    */
-  async resolveDependencyModules(
-    buildDependencies: BuildDependencyConfig[],
-    runtimeDependencies: string[]
-  ): Promise<Module[]> {
+  resolveDependencyModules(buildDependencies: BuildDependencyConfig[], runtimeDependencies: string[]): Module[] {
     const moduleNames = buildDependencies.map((d) => getModuleKey(d.name, d.plugin))
     const serviceNames = runtimeDependencies.filter(
       (d) => this.serviceConfigs[d] && !this.isDisabled(this.serviceConfigs[d])
     )
     const taskNames = runtimeDependencies.filter((d) => this.taskConfigs[d] && !this.isDisabled(this.taskConfigs[d]))
 
-    const buildDeps = await this.getDependenciesForMany({ nodeType: "build", names: moduleNames, recursive: true })
-    const serviceDeps = await this.getDependenciesForMany({ nodeType: "deploy", names: serviceNames, recursive: true })
-    const taskDeps = await this.getDependenciesForMany({ nodeType: "run", names: taskNames, recursive: true })
+    const buildDeps = this.getDependenciesForMany({ nodeType: "build", names: moduleNames, recursive: true })
+    const serviceDeps = this.getDependenciesForMany({ nodeType: "deploy", names: serviceNames, recursive: true })
+    const taskDeps = this.getDependenciesForMany({ nodeType: "run", names: taskNames, recursive: true })
 
     const modules = [
-      ...(await this.getModules({ names: moduleNames, includeDisabled: true })),
-      ...(await this.modulesForRelations(await this.mergeRelations(buildDeps, serviceDeps, taskDeps))),
+      ...this.getModules({ names: moduleNames, includeDisabled: true }),
+      ...this.modulesForRelations(this.mergeRelations(buildDeps, serviceDeps, taskDeps)),
     ]
 
     return sortBy(uniqByName(modules), "name")
   }
 
-  private async toRelations(nodes: DependencyGraphNode[]): Promise<DependencyRelations> {
+  private toRelations(nodes: DependencyGraphNode[]): DependencyRelations {
     return this.relationsFromNames({
       build: this.uniqueNames(nodes, "build"),
       deploy: this.uniqueNames(nodes, "deploy"),
@@ -537,13 +531,13 @@ export class ConfigGraph {
     })
   }
 
-  private async relationsFromNames(names: DependencyRelationNames): Promise<DependencyRelations> {
-    return Bluebird.props({
+  private relationsFromNames(names: DependencyRelationNames): DependencyRelations {
+    return {
       build: this.getModules({ names: names.build, includeDisabled: true }),
       deploy: this.getServices({ names: names.deploy, includeDisabled: true }),
       run: this.getTasks({ names: names.run, includeDisabled: true }),
       test: Object.values(pick(this.testConfigs, names.test)).map((t) => t.config),
-    })
+    }
   }
 
   private getDependencyNodes({

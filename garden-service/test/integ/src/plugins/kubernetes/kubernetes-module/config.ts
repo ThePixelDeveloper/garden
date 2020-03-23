@@ -25,7 +25,7 @@ describe("validateKubernetesModule", () => {
     garden = await getKubernetesTestGarden()
     const provider = await garden.resolveProvider("local-kubernetes")
     ctx = garden.getPluginContext(provider)
-    await garden["resolveModules"]({ log: garden.log })
+    await garden.resolveModules({ log: garden.log })
     moduleConfigs = cloneDeep((<any>garden).moduleConfigs)
   })
 

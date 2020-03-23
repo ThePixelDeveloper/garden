@@ -183,6 +183,6 @@ export class TaskTask extends BaseTask {
  */
 export async function getTaskVersion(garden: Garden, graph: ConfigGraph, task: Task): Promise<ModuleVersion> {
   const { module } = task
-  const moduleDeps = await graph.resolveDependencyModules(module.build.dependencies, task.config.dependencies)
+  const moduleDeps = graph.resolveDependencyModules(module.build.dependencies, task.config.dependencies)
   return garden.resolveVersion(module, moduleDeps)
 }

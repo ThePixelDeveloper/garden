@@ -394,14 +394,14 @@ describe("containerHelpers", () => {
   describe("hasDockerfile", () => {
     it("should return true if module config explicitly sets a Dockerfile", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const module = await graph.getModule("module-a")
+      const module = graph.getModule("module-a")
       module.spec.dockerfile = "Dockerfile"
       expect(await helpers.hasDockerfile(module)).to.be.true
     })
 
     it("should return true if module sources include a Dockerfile", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const module = await graph.getModule("module-a")
+      const module = graph.getModule("module-a")
 
       const dockerfilePath = join(module.path, "Dockerfile")
       module.version.files.push(dockerfilePath)
@@ -412,7 +412,7 @@ describe("containerHelpers", () => {
 
     it("should return false if no Dockerfile is specified or included in sources", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const module = await graph.getModule("module-a")
+      const module = graph.getModule("module-a")
 
       const dockerfilePath = join(module.path, "Dockerfile")
       td.replace(helpers, "getDockerfileSourcePath", () => dockerfilePath)

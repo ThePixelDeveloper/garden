@@ -70,7 +70,7 @@ export class RunTestCommand extends Command<Args, Opts> {
     const testName = args.test
 
     const graph = await garden.getConfigGraph(log)
-    const module = await graph.getModule(moduleName, true)
+    const module = graph.getModule(moduleName, true)
 
     const testConfig = findByName(module.testConfigs, testName)
 
@@ -112,7 +112,7 @@ export class RunTestCommand extends Command<Args, Opts> {
     const dependencyResults = await garden.processTasks(await testTask.getDependencies())
 
     const interactive = opts.interactive
-    const dependencies = await graph.getDependencies({ nodeType: "test", name: test.name, recursive: false })
+    const dependencies = graph.getDependencies({ nodeType: "test", name: test.name, recursive: false })
 
     const serviceStatuses = getServiceStatuses(dependencyResults)
     const taskResults = getRunTaskResults(dependencyResults)

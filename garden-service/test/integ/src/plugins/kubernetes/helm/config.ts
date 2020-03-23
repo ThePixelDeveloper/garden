@@ -28,7 +28,7 @@ describe("configureHelmModule", () => {
     garden = await getHelmTestGarden()
     const provider = await garden.resolveProvider("local-kubernetes")
     ctx = garden.getPluginContext(provider)
-    await garden["resolveModules"]({ log: garden.log })
+    await garden.resolveModules({ log: garden.log })
     moduleConfigs = cloneDeep((<any>garden).moduleConfigs)
   })
 
@@ -43,7 +43,7 @@ describe("configureHelmModule", () => {
   it("should validate a Helm module", async () => {
     const module = await garden.resolveModule("api")
     const graph = await garden.getConfigGraph(garden.log)
-    const imageModule = await graph.getModule("api-image")
+    const imageModule = graph.getModule("api-image")
     const { versionString } = imageModule.version
 
     expect(module._config).to.eql({

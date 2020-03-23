@@ -137,7 +137,7 @@ describe("DeployTask", () => {
 
   describe("getDependencies", () => {
     it("should always return task dependencies having force = false", async () => {
-      const testService = await graph.getService("test-service")
+      const testService = graph.getService("test-service")
 
       const forcedDeployTask = new DeployTask({
         garden,
@@ -179,7 +179,7 @@ describe("DeployTask", () => {
 
   describe("process", () => {
     it("should correctly resolve runtime outputs from tasks", async () => {
-      const testService = await graph.getService("test-service")
+      const testService = graph.getService("test-service")
 
       const deployTask = new DeployTask({
         garden,

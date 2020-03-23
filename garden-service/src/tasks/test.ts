@@ -275,7 +275,8 @@ export async function getTestVersion(
   module: Module,
   testConfig: TestConfig
 ): Promise<ModuleVersion> {
-  const moduleDeps = (await graph.resolveDependencyModules(module.build.dependencies, testConfig.dependencies))
+  const moduleDeps = graph
+    .resolveDependencyModules(module.build.dependencies, testConfig.dependencies)
     // Don't include the module itself in the dependencies here
     .filter((m) => m.name !== module.name)
 

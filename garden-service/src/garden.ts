@@ -315,7 +315,7 @@ export class Garden {
    * Make sure to stop it using `.close()` when cleaning up or when watching is no longer needed.
    */
   async startWatcher(graph: ConfigGraph, bufferInterval?: number) {
-    const modules = await graph.getModules()
+    const modules = graph.getModules()
     const linkedPaths = (await getLinkedSources(this)).map((s) => s.path)
     const paths = [this.projectRoot, ...linkedPaths]
     this.watcher = new Watcher(this, this.log, paths, modules, bufferInterval)
@@ -591,17 +591,11 @@ export class Garden {
   }
 
   /**
-   * Returns module configs that are registered in this context, fully resolved and configured (via their respective
-   * plugin handlers).
-   * Scans for modules in the project root and remote/linked sources if it hasn't already been done.
+   * Resolve the raw module configs and return a new instance of ConfigGraph.
+   * The graph instance is immutable and represents the configuration at the point of calling this method.
+   * For long-running processes, you need to call this again when any module or configuration has been updated.
    */
-  protected async resolveModules({
-    log,
-    runtimeContext,
-  }: {
-    log: LogEntry
-    runtimeContext?: RuntimeContext
-  }): Promise<Module[]> {
+  async getConfigGraph(log: LogEntry, runtimeContext?: RuntimeContext) {
     const providers = await this.resolveProviders()
     const configs = await this.getRawModuleConfigs()
 
@@ -677,7 +671,7 @@ export class Garden {
         graph = new ConfigGraph(resolvedModules, moduleTypes)
       }
 
-      const modules = await graph.getModules()
+      const modules = graph.getModules()
 
       const { addBuildDependencies, addRuntimeDependencies, addModules } = await actions.augmentGraph({
         pluginName: provider.name,
@@ -756,6 +750,9 @@ export class Garden {
       }
     }
 
+    // Ensure dependency structure is alright
+    graph = new ConfigGraph(resolvedModules, moduleTypes)
+
     // Need to update versions and add the build dependency modules to the Module objects here, because plugins can
     // add build dependencies in the configure handler.
     // FIXME: This should be addressed higher up in the process, but is quite tricky to manage with the current
@@ -785,18 +782,7 @@ export class Garden {
       module.version = await this.resolveVersion(module, buildDeps)
     })
 
-    return resolvedModules
-  }
-
-  /**
-   * Resolve the raw module configs and return a new instance of ConfigGraph.
-   * The graph instance is immutable and represents the configuration at the point of calling this method.
-   * For long-running processes, you need to call this again when any module or configuration has been updated.
-   */
-  async getConfigGraph(log: LogEntry, runtimeContext?: RuntimeContext) {
-    const modules = await this.resolveModules({ log, runtimeContext })
-    const moduleTypes = await this.getModuleTypes()
-    return new ConfigGraph(modules, moduleTypes)
+    return graph
   }
 
   /**
@@ -1001,11 +987,17 @@ export class Garden {
    * This dumps the full project configuration including all modules.
    */
   public async dumpConfig(log: LogEntry): Promise<ConfigDump> {
+    const graph = await this.getConfigGraph(log)
+    const modules = graph.getModules()
+
     return {
       environmentName: this.environmentName,
       providers: await this.resolveProviders(),
       variables: this.variables,
-      moduleConfigs: sortBy(await this.resolveModules({ log }), "name"),
+      moduleConfigs: sortBy(
+        modules.map((m) => m._config),
+        "name"
+      ),
       projectRoot: this.projectRoot,
     }
   }

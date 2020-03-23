@@ -66,7 +66,7 @@ export class PublishCommand extends Command<Args, Opts> {
     printHeader(headerLog, "Publish modules", "rocket")
 
     const graph = await garden.getConfigGraph(log)
-    const modules = await graph.getModules({ names: args.modules })
+    const modules = graph.getModules({ names: args.modules })
 
     const results = await publishModules({
       garden,

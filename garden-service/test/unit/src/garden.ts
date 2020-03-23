@@ -188,36 +188,36 @@ describe("Garden", () => {
     })
 
     it("should throw if the specified environment isn't configured", async () => {
-      await expectError(async () => Garden.factory(projectRootA, { environmentName: "bla" }), "parameter")
+      await expectError(async () => TestGarden.factory(projectRootA, { environmentName: "bla" }), "parameter")
     })
 
     it("should throw if environment starts with 'garden-'", async () => {
-      await expectError(async () => Garden.factory(projectRootA, { environmentName: "garden-bla" }), "parameter")
+      await expectError(async () => TestGarden.factory(projectRootA, { environmentName: "garden-bla" }), "parameter")
     })
 
     it("should throw if plugin module exports invalid name", async () => {
       const pluginPath = join(__dirname, "plugins", "invalid-name.js")
       const plugins = [pluginPath]
       const projectRoot = join(dataDir, "test-project-empty")
-      await expectError(async () => Garden.factory(projectRoot, { plugins }), "plugin")
+      await expectError(async () => TestGarden.factory(projectRoot, { plugins }), "plugin")
     })
 
     it("should throw if plugin module doesn't contain plugin", async () => {
       const pluginPath = join(__dirname, "plugins", "missing-plugin.js")
       const plugins = [pluginPath]
       const projectRoot = join(dataDir, "test-project-empty")
-      await expectError(async () => Garden.factory(projectRoot, { plugins }), "plugin")
+      await expectError(async () => TestGarden.factory(projectRoot, { plugins }), "plugin")
     })
 
     it("should set .garden as the default cache dir", async () => {
       const projectRoot = join(dataDir, "test-project-empty")
-      const garden = await Garden.factory(projectRoot, { plugins: [testPlugin] })
+      const garden = await TestGarden.factory(projectRoot, { plugins: [testPlugin] })
       expect(garden.gardenDirPath).to.eql(join(projectRoot, ".garden"))
     })
 
     it("should optionally set a custom cache dir relative to project root", async () => {
       const projectRoot = join(dataDir, "test-project-empty")
-      const garden = await Garden.factory(projectRoot, {
+      const garden = await TestGarden.factory(projectRoot, {
         plugins: [testPlugin],
         gardenDirPath: "my/cache/dir",
       })
@@ -227,7 +227,7 @@ describe("Garden", () => {
     it("should optionally set a custom cache dir with an absolute path", async () => {
       const projectRoot = join(dataDir, "test-project-empty")
       const gardenDirPath = join(dataDir, "test-garden-dir")
-      const garden = await Garden.factory(projectRoot, {
+      const garden = await TestGarden.factory(projectRoot, {
         plugins: [testPlugin],
         gardenDirPath,
       })
@@ -236,7 +236,7 @@ describe("Garden", () => {
 
     it("should load default varfiles if they exist", async () => {
       const projectRoot = join(dataDir, "test-projects", "varfiles")
-      const garden = await Garden.factory(projectRoot, {})
+      const garden = await TestGarden.factory(projectRoot, {})
       expect(garden.variables).to.eql({
         a: "a",
         b: "B",
@@ -246,7 +246,7 @@ describe("Garden", () => {
 
     it("should load custom varfiles if specified", async () => {
       const projectRoot = join(dataDir, "test-projects", "varfiles-custom")
-      const garden = await Garden.factory(projectRoot, {})
+      const garden = await TestGarden.factory(projectRoot, {})
       expect(garden.variables).to.eql({
         a: "a",
         b: "B",
@@ -266,7 +266,7 @@ describe("Garden", () => {
           name: foo
         `
         )
-        await expectError(async () => Garden.factory(tmpPath, {}), "runtime")
+        await expectError(async () => TestGarden.factory(tmpPath, {}), "runtime")
       } finally {
         await dir.cleanup()
       }
@@ -301,7 +301,7 @@ describe("Garden", () => {
         ],
       })
 
-      const garden = await Garden.factory(pathFoo, {
+      const garden = await TestGarden.factory(pathFoo, {
         plugins: [base, foo],
         config: {
           ...projectConfigFoo,
@@ -351,7 +351,7 @@ describe("Garden", () => {
         ],
       })
 
-      const garden = await Garden.factory(pathFoo, {
+      const garden = await TestGarden.factory(pathFoo, {
         plugins: [foo],
         config: projectConfigFoo,
       })
@@ -419,7 +419,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [baseA, baseB, foo],
           config: projectConfigFoo,
         })
@@ -476,7 +476,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo],
           config: projectConfigFoo,
         })
@@ -514,7 +514,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [base, foo],
           config: {
             ...projectConfigFoo,
@@ -552,7 +552,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo],
           config: projectConfigFoo,
         })
@@ -592,7 +592,7 @@ describe("Garden", () => {
           base: "base",
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [depA, depB, depC, base, foo],
           config: projectConfigFoo,
         })
@@ -618,7 +618,7 @@ describe("Garden", () => {
           },
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [base, foo],
           config: projectConfigFoo,
         })
@@ -642,7 +642,7 @@ describe("Garden", () => {
           base: "base",
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [base, foo],
           config: projectConfigFoo,
         })
@@ -683,7 +683,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [base, foo],
           config: projectConfigFoo,
         })
@@ -723,7 +723,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [base, foo],
           config: projectConfigFoo,
         })
@@ -751,7 +751,7 @@ describe("Garden", () => {
           createModuleTypes: base.createModuleTypes,
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [base, foo],
           config: projectConfigFoo,
         })
@@ -791,7 +791,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [base, foo],
           config: projectConfigFoo,
         })
@@ -831,7 +831,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [base, foo],
           config: {
             ...projectConfigFoo,
@@ -853,7 +853,7 @@ describe("Garden", () => {
           base: "base",
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo],
           config: projectConfigFoo,
         })
@@ -877,7 +877,7 @@ describe("Garden", () => {
           base: "foo",
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo, bar],
           config: projectConfigFoo,
         })
@@ -915,7 +915,7 @@ describe("Garden", () => {
             base: "b",
           })
 
-          const garden = await Garden.factory(pathFoo, {
+          const garden = await TestGarden.factory(pathFoo, {
             plugins: [depA, depB, depC, baseA, b, foo],
             config: projectConfigFoo,
           })
@@ -948,7 +948,7 @@ describe("Garden", () => {
             },
           })
 
-          const garden = await Garden.factory(pathFoo, {
+          const garden = await TestGarden.factory(pathFoo, {
             plugins: [baseA, baseB, foo],
             config: projectConfigFoo,
           })
@@ -1005,7 +1005,7 @@ describe("Garden", () => {
             ],
           })
 
-          const garden = await Garden.factory(pathFoo, {
+          const garden = await TestGarden.factory(pathFoo, {
             plugins: [baseA, baseB, foo],
             config: projectConfigFoo,
           })
@@ -1069,7 +1069,7 @@ describe("Garden", () => {
             ],
           })
 
-          const garden = await Garden.factory(pathFoo, {
+          const garden = await TestGarden.factory(pathFoo, {
             plugins: [baseA, baseB, foo],
             config: projectConfigFoo,
           })
@@ -1109,7 +1109,7 @@ describe("Garden", () => {
             ],
           })
 
-          const garden = await Garden.factory(pathFoo, {
+          const garden = await TestGarden.factory(pathFoo, {
             plugins: [baseA, baseB, foo],
             config: projectConfigFoo,
           })
@@ -1155,7 +1155,7 @@ describe("Garden", () => {
             ],
           })
 
-          const garden = await Garden.factory(pathFoo, {
+          const garden = await TestGarden.factory(pathFoo, {
             plugins: [baseA, baseB, foo],
             config: projectConfigFoo,
           })
@@ -1211,7 +1211,7 @@ describe("Garden", () => {
             base: "base-c",
           })
 
-          const garden = await Garden.factory(pathFoo, {
+          const garden = await TestGarden.factory(pathFoo, {
             plugins: [baseA, baseB, baseC, foo],
             config: projectConfigFoo,
           })
@@ -1244,7 +1244,7 @@ describe("Garden", () => {
             base: "base-b",
           })
 
-          const garden = await Garden.factory(pathFoo, {
+          const garden = await TestGarden.factory(pathFoo, {
             plugins: [baseA, baseB, foo],
             config: projectConfigFoo,
           })
@@ -1263,7 +1263,7 @@ describe("Garden", () => {
 
   describe("resolveProviders", () => {
     it("should throw when plugins are missing", async () => {
-      const garden = await Garden.factory(projectRootA)
+      const garden = await TestGarden.factory(projectRootA)
 
       await expectError(
         () => garden.resolveProviders(),
@@ -1338,7 +1338,7 @@ describe("Garden", () => {
         },
       })
 
-      const garden = await Garden.factory(projectConfig.path, {
+      const garden = await TestGarden.factory(projectConfig.path, {
         plugins: [test],
         config: projectConfig,
       })
@@ -1450,7 +1450,7 @@ describe("Garden", () => {
       const garden = await TestGarden.factory(projectRootA, { config: projectConfig, plugins: [test] })
 
       const graph = await garden.getConfigGraph(garden.log)
-      expect(await graph.getModule("test--foo")).to.exist
+      expect(graph.getModule("test--foo")).to.exist
     })
 
     it("should throw if plugins have declared circular dependencies", async () => {
@@ -2017,7 +2017,7 @@ describe("Garden", () => {
       const garden = await makeTestGardenA()
       await garden.scanModules()
 
-      const modules = await garden["resolveModules"]({ log: garden.log })
+      const modules = await garden.resolveModules({ log: garden.log })
       expect(getNames(modules).sort()).to.eql(["module-a", "module-b", "module-c"])
     })
 
@@ -2025,7 +2025,7 @@ describe("Garden", () => {
       const garden = await makeTestGarden(resolve(dataDir, "test-projects", "multiple-module-config"))
       await garden.scanModules()
 
-      const modules = await garden["resolveModules"]({ log: garden.log })
+      const modules = await garden.resolveModules({ log: garden.log })
       expect(getNames(modules).sort()).to.eql([
         "module-a1",
         "module-a2",
@@ -2039,7 +2039,7 @@ describe("Garden", () => {
     it("should scan and add modules for projects with external project sources", async () => {
       const garden = await makeExtProjectSourcesGarden()
       await garden.scanModules()
-      const modules = await garden["resolveModules"]({ log: garden.log })
+      const modules = await garden.resolveModules({ log: garden.log })
       expect(getNames(modules).sort()).to.eql(["module-a", "module-b", "module-c"])
     })
 
@@ -2057,14 +2057,14 @@ describe("Garden", () => {
 
     it("should scan and add modules with config files with yaml and yml extensions", async () => {
       const garden = await makeTestGarden(getDataDir("test-project-yaml-file-extensions"))
-      const modules = await garden["resolveModules"]({ log: garden.log })
+      const modules = await garden.resolveModules({ log: garden.log })
       expect(getNames(modules).sort()).to.eql(["module-yaml", "module-yml"])
     })
 
     it("should respect the modules.include and modules.exclude fields, if specified", async () => {
       const projectRoot = getDataDir("test-projects", "project-include-exclude")
       const garden = await makeTestGarden(projectRoot)
-      const modules = await garden["resolveModules"]({ log: garden.log })
+      const modules = await garden.resolveModules({ log: garden.log })
 
       // Should NOT include "nope" and "module-c"
       expect(getNames(modules).sort()).to.eql(["module-a", "module-b"])
@@ -2073,7 +2073,7 @@ describe("Garden", () => {
     it("should respect .gitignore and .gardenignore files", async () => {
       const projectRoot = getDataDir("test-projects", "dotignore")
       const garden = await makeTestGarden(projectRoot)
-      const modules = await garden["resolveModules"]({ log: garden.log })
+      const modules = await garden.resolveModules({ log: garden.log })
 
       expect(getNames(modules).sort()).to.eql(["module-a"])
     })
@@ -2081,7 +2081,7 @@ describe("Garden", () => {
     it("should respect custom dotignore files", async () => {
       const projectRoot = getDataDir("test-projects", "dotignore")
       const garden = await makeTestGarden(projectRoot)
-      const modules = await garden["resolveModules"]({ log: garden.log })
+      const modules = await garden.resolveModules({ log: garden.log })
 
       expect(getNames(modules).sort()).to.eql(["module-a"])
     })
@@ -2090,7 +2090,7 @@ describe("Garden", () => {
       const projectRoot = getDataDir("test-projects", "multiple-module-config-bad")
       const garden = await makeTestGarden(projectRoot)
       await expectError(
-        () => garden["resolveModules"]({ log: garden.log }),
+        () => garden.resolveModules({ log: garden.log }),
         (err) => {
           expect(stripAnsi(err.message)).to.equal(dedent`
           Missing include and/or exclude directives on modules with overlapping paths.
@@ -2129,7 +2129,7 @@ describe("Garden", () => {
       const garden = await makeTestGarden(projectRoot)
       const key = "${modules.module-a.version}"
       await expectError(
-        () => garden["resolveModules"]({ log: garden.log }),
+        () => garden.resolveModules({ log: garden.log }),
         (err) =>
           expect(stripAnsi(err.message)).to.equal(dedent`
             Failed resolving one or more modules:
@@ -2162,7 +2162,7 @@ describe("Garden", () => {
       const projectRoot = getDataDir("test-projects", "1067-module-ref-within-file")
       const garden = await makeTestGarden(projectRoot)
       // This should just complete successfully
-      await garden["resolveModules"]({ log: garden.log })
+      await garden.resolveModules({ log: garden.log })
     })
 
     it("should throw if a module type is not recognized", async () => {
@@ -2172,7 +2172,7 @@ describe("Garden", () => {
       config.type = "foo"
 
       await expectError(
-        () => garden["resolveModules"]({ log: garden.log }),
+        () => garden.resolveModules({ log: garden.log }),
         (err) =>
           expect(stripAnsi(err.message)).to.equal(dedent`
             Failed resolving one or more modules:
@@ -2195,7 +2195,7 @@ describe("Garden", () => {
         ],
       })
 
-      const garden = await Garden.factory(pathFoo, {
+      const garden = await TestGarden.factory(pathFoo, {
         plugins: [foo],
         config: projectConfigFoo,
       })
@@ -2218,7 +2218,7 @@ describe("Garden", () => {
       }
 
       await expectError(
-        () => garden["resolveModules"]({ log: garden.log }),
+        () => garden.resolveModules({ log: garden.log }),
         (err) =>
           expect(stripAnsi(err.message)).to.equal(dedent`
             Failed resolving one or more modules:
@@ -2248,7 +2248,7 @@ describe("Garden", () => {
         ],
       })
 
-      const garden = await Garden.factory(pathFoo, {
+      const garden = await TestGarden.factory(pathFoo, {
         plugins: [foo],
         config: projectConfigFoo,
       })
@@ -2271,7 +2271,7 @@ describe("Garden", () => {
       }
 
       await expectError(
-        () => garden["resolveModules"]({ log: garden.log }),
+        () => garden.resolveModules({ log: garden.log }),
         (err) =>
           expect(stripAnsi(err.message)).to.equal(dedent`
             Failed resolving one or more modules:
@@ -2319,7 +2319,7 @@ describe("Garden", () => {
         ],
       })
 
-      const garden = await Garden.factory(pathFoo, {
+      const garden = await TestGarden.factory(pathFoo, {
         plugins: [base, foo],
         config: {
           ...projectConfigFoo,
@@ -2345,7 +2345,7 @@ describe("Garden", () => {
       }
 
       await expectError(
-        () => garden["resolveModules"]({ log: garden.log }),
+        () => garden.resolveModules({ log: garden.log }),
         (err) =>
           expect(stripAnsi(err.message)).to.equal(dedent`
             Failed resolving one or more modules:
@@ -2387,7 +2387,7 @@ describe("Garden", () => {
         ],
       })
 
-      const garden = await Garden.factory(pathFoo, {
+      const garden = await TestGarden.factory(pathFoo, {
         plugins: [base, foo],
         config: {
           ...projectConfigFoo,
@@ -2413,7 +2413,7 @@ describe("Garden", () => {
       }
 
       await expectError(
-        () => garden["resolveModules"]({ log: garden.log }),
+        () => garden.resolveModules({ log: garden.log }),
         (err) =>
           expect(stripAnsi(err.message)).to.equal(dedent`
             Failed resolving one or more modules:
@@ -2473,7 +2473,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [baseA, baseB, foo],
           config: {
             ...projectConfigFoo,
@@ -2499,7 +2499,7 @@ describe("Garden", () => {
         }
 
         await expectError(
-          () => garden["resolveModules"]({ log: garden.log }),
+          () => garden.resolveModules({ log: garden.log }),
           (err) =>
             expect(stripAnsi(err.message)).to.equal(dedent`
               Failed resolving one or more modules:
@@ -2553,7 +2553,7 @@ describe("Garden", () => {
           ],
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [baseA, baseB, foo],
           config: {
             ...projectConfigFoo,
@@ -2579,7 +2579,7 @@ describe("Garden", () => {
         }
 
         await expectError(
-          () => garden["resolveModules"]({ log: garden.log }),
+          () => garden.resolveModules({ log: garden.log }),
           (err) =>
             expect(stripAnsi(err.message)).to.equal(dedent`
               Failed resolving one or more modules:
@@ -2623,12 +2623,12 @@ describe("Garden", () => {
           },
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo],
           config: projectConfigFoo,
         })
 
-        const module = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
+        const module = findByName(await garden.resolveModules({ log: garden.log }), "foo")!
 
         expect(module.type).to.equal("foo")
         expect(module.spec.foo).to.eql("bar")
@@ -2659,7 +2659,7 @@ describe("Garden", () => {
           },
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo],
           config: projectConfigFoo,
         })
@@ -2697,7 +2697,7 @@ describe("Garden", () => {
           },
         }
 
-        const module = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
+        const module = findByName(await garden.resolveModules({ log: garden.log }), "foo")!
 
         expect(module).to.exist
         expect(module.build).to.eql({ dependencies: [{ name: "bar", copy: [] }] })
@@ -2751,12 +2751,12 @@ describe("Garden", () => {
           },
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo],
           config: projectConfigFoo,
         })
 
-        const module = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
+        const module = findByName(await garden.resolveModules({ log: garden.log }), "foo")!
 
         expect(module).to.exist
         expect(module.build).to.eql({ dependencies: [{ name: "bar", copy: [] }] })
@@ -2800,13 +2800,13 @@ describe("Garden", () => {
           },
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo],
           config: projectConfigFoo,
         })
 
         await expectError(
-          () => garden["resolveModules"]({ log: garden.log }),
+          () => garden.resolveModules({ log: garden.log }),
           (err) =>
             expect(stripAnsi(err.message)).to.equal(deline`
               Provider 'foo' added a build dependency by module 'foo' on 'bar' but module 'foo' could not be found.
@@ -2844,7 +2844,7 @@ describe("Garden", () => {
           },
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo],
           config: projectConfigFoo,
         })
@@ -2880,7 +2880,7 @@ describe("Garden", () => {
           },
         }
 
-        const module = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
+        const module = findByName(await garden.resolveModules({ log: garden.log }), "foo")!
 
         expect(module).to.exist
         expect(module.serviceConfigs).to.eql([
@@ -2922,7 +2922,7 @@ describe("Garden", () => {
           },
         })
 
-        const garden = await Garden.factory(pathFoo, {
+        const garden = await TestGarden.factory(pathFoo, {
           plugins: [foo],
           config: projectConfigFoo,
         })
@@ -2945,7 +2945,7 @@ describe("Garden", () => {
         }
 
         await expectError(
-          () => garden["resolveModules"]({ log: garden.log }),
+          () => garden.resolveModules({ log: garden.log }),
           (err) =>
             expect(stripAnsi(err.message)).to.equal(deline`
               Provider 'foo' added a runtime dependency by 'bar' on 'foo'
@@ -3013,12 +3013,12 @@ describe("Garden", () => {
         }
 
         // First test correct order
-        let garden = await Garden.factory(pathFoo, {
+        let garden = await TestGarden.factory(pathFoo, {
           plugins: [foo, bar],
           config,
         })
 
-        const fooModule = findByName(await garden["resolveModules"]({ log: garden.log }), "foo")!
+        const fooModule = findByName(await garden.resolveModules({ log: garden.log }), "foo")!
 
         expect(fooModule).to.exist
         expect(fooModule.build).to.eql({ dependencies: [{ name: "bar", copy: [] }] })
@@ -3027,13 +3027,13 @@ describe("Garden", () => {
         foo.dependencies = ["bar"]
         bar.dependencies = []
 
-        garden = await Garden.factory(pathFoo, {
+        garden = await TestGarden.factory(pathFoo, {
           plugins: [foo, bar],
           config,
         })
 
         await expectError(
-          () => garden["resolveModules"]({ log: garden.log }),
+          () => garden.resolveModules({ log: garden.log }),
           (err) =>
             expect(stripAnsi(err.message)).to.equal(deline`
               Provider 'bar' added a build dependency by module 'foo' on 'bar' but module 'foo' could not be found.
@@ -3109,9 +3109,9 @@ describe("Garden", () => {
 
         const garden = await makeTestGarden(projectRoot)
         const graph = await garden.getConfigGraph(garden.log)
-        const moduleA = await graph.getModule("module-a")
-        const moduleB = await graph.getModule("module-b")
-        const moduleC = await graph.getModule("module-c")
+        const moduleA = graph.getModule("module-a")
+        const moduleB = graph.getModule("module-b")
+        const moduleC = graph.getModule("module-c")
         expect(moduleA.version.versionString).to.equal(moduleAVersionString)
         expect(moduleB.version.versionString).to.equal(moduleBVersionString)
         expect(moduleC.version.versionString).to.equal(moduleCVersionString)
@@ -3126,9 +3126,9 @@ describe("Garden", () => {
 
         const garden = await makeTestGarden(projectRoot)
         const graph = await garden.getConfigGraph(garden.log)
-        const moduleA = await graph.getModule("module-a")
-        const moduleB = await graph.getModule("module-b")
-        const moduleC = await graph.getModule("module-c")
+        const moduleA = graph.getModule("module-a")
+        const moduleB = graph.getModule("module-b")
+        const moduleC = graph.getModule("module-c")
         expect(moduleA.version.versionString).to.equal(moduleAVersionString)
         expect(moduleB.version.versionString).to.equal(moduleBVersionString)
         expect(moduleC.version.versionString).to.equal(moduleCVersionString)
@@ -3143,9 +3143,9 @@ describe("Garden", () => {
 
         const garden = await makeTestGarden(projectRoot)
         const graph = await garden.getConfigGraph(garden.log)
-        const moduleA = await graph.getModule("module-a")
-        const moduleB = await graph.getModule("module-b")
-        const moduleC = await graph.getModule("module-c")
+        const moduleA = graph.getModule("module-a")
+        const moduleB = graph.getModule("module-b")
+        const moduleC = graph.getModule("module-c")
         expect(moduleA.version.versionString).to.not.equal(moduleAVersionString)
         expect(moduleB.version.versionString).to.equal(moduleBVersionString)
         expect(moduleC.version.versionString).to.equal(moduleCVersionString)

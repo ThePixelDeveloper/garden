@@ -542,7 +542,7 @@ export class ActionRouter implements TypeGuard {
     serviceNames?: string[]
   }): Promise<ServiceStatusMap> {
     const graph = await this.garden.getConfigGraph(log)
-    const services = await graph.getServices({ names: serviceNames })
+    const services = graph.getServices({ names: serviceNames })
 
     const tasks = services.map(
       (service) =>
@@ -560,7 +560,7 @@ export class ActionRouter implements TypeGuard {
   }
 
   async deployServices({ graph, serviceNames, force = false, forceBuild = false, log }: DeployServicesParams) {
-    const services = await graph.getServices({ names: serviceNames })
+    const services = graph.getServices({ names: serviceNames })
 
     const tasks = services.map(
       (service) =>
@@ -587,7 +587,7 @@ export class ActionRouter implements TypeGuard {
 
     const servicesLog = log.info({ msg: chalk.white("Deleting services..."), status: "active" })
 
-    const services = await graph.getServices({ names })
+    const services = graph.getServices({ names })
 
     const deleteResults = await this.garden.processTasks(
       services.map((service) => {
@@ -791,10 +791,10 @@ export class ActionRouter implements TypeGuard {
 
       const providers = await this.garden.resolveProviders()
       const graph = await this.garden.getConfigGraph(log, runtimeContext)
-      service = await graph.getService(service.name)
+      service = graph.getService(service.name)
       module = service.module
 
-      const modules = await graph.getModules()
+      const modules = graph.getModules()
       const configContext = new ModuleConfigContext({
         garden: this.garden,
         resolvedProviders: providers,
@@ -852,10 +852,10 @@ export class ActionRouter implements TypeGuard {
 
       const providers = await this.garden.resolveProviders()
       const graph = await this.garden.getConfigGraph(log, runtimeContext)
-      task = await graph.getTask(task.name)
+      task = graph.getTask(task.name)
       module = task.module
 
-      const modules = await graph.getModules()
+      const modules = graph.getModules()
       const configContext = new ModuleConfigContext({
         garden: this.garden,
         resolvedProviders: providers,

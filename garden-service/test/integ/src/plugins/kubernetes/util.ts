@@ -80,7 +80,7 @@ describe("util", () => {
         const provider = (await garden.resolveProvider("local-kubernetes")) as Provider<KubernetesConfig>
         const api = await KubeApi.factory(garden.log, provider)
 
-        const service = await graph.getService("simple-service")
+        const service = graph.getService("simple-service")
 
         const deployTask = new DeployTask({
           force: false,

@@ -33,7 +33,7 @@ describe("GetConfigCommand", () => {
       environmentName: garden.environmentName,
       providers,
       variables: garden.variables,
-      moduleConfigs: sortBy(await garden["resolveModules"]({ log }), "name"),
+      moduleConfigs: sortBy(await garden.resolveModules({ log }), "name"),
       projectRoot: garden.projectRoot,
     }
 
@@ -108,7 +108,7 @@ describe("GetConfigCommand", () => {
     const providers = await garden.resolveProviders()
 
     // Remove the disabled config, the first one in the array
-    let expectedModuleConfigs = sortBy(await garden["resolveModules"]({ log }), "name").slice(1)
+    let expectedModuleConfigs = sortBy(await garden.resolveModules({ log }), "name").slice(1)
 
     const config = {
       environmentName: garden.environmentName,
@@ -179,7 +179,7 @@ describe("GetConfigCommand", () => {
 
     const providers = await garden.resolveProviders()
 
-    const expectedModuleConfigs = await garden["resolveModules"]({ log })
+    const expectedModuleConfigs = await garden.resolveModules({ log })
     // Remove the disabled service
     expectedModuleConfigs[0].serviceConfigs = [
       {
@@ -274,7 +274,7 @@ describe("GetConfigCommand", () => {
 
     const providers = await garden.resolveProviders()
 
-    const expectedModuleConfigs = await garden["resolveModules"]({ log })
+    const expectedModuleConfigs = await garden.resolveModules({ log })
     // Remove the disabled task
     expectedModuleConfigs[0].taskConfigs = [
       {
@@ -368,7 +368,7 @@ describe("GetConfigCommand", () => {
 
     const providers = await garden.resolveProviders()
 
-    const expectedModuleConfigs = await garden["resolveModules"]({ log })
+    const expectedModuleConfigs = await garden.resolveModules({ log })
     // Remove the disabled task
     expectedModuleConfigs[0].testConfigs = [
       {

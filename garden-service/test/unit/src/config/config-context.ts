@@ -279,7 +279,7 @@ describe("ModuleConfigContext", () => {
   before(async () => {
     garden = await makeTestGardenA()
     const graph = await garden.getConfigGraph(garden.log)
-    const modules = await graph.getModules()
+    const modules = graph.getModules()
 
     c = new ModuleConfigContext({
       garden,
@@ -368,10 +368,10 @@ describe("ModuleConfigContext", () => {
 
     before(async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const modules = await graph.getModules()
-      serviceA = await graph.getService("service-a")
-      const serviceB = await graph.getService("service-b")
-      const taskB = await graph.getTask("task-b")
+      const modules = graph.getModules()
+      serviceA = graph.getService("service-a")
+      const serviceB = graph.getService("service-b")
+      const taskB = graph.getTask("task-b")
 
       const runtimeContext = await prepareRuntimeContext({
         garden,

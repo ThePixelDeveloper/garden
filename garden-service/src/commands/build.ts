@@ -84,7 +84,7 @@ export class BuildCommand extends Command<Args, Opts> {
     await garden.clearBuilds()
 
     const graph = await garden.getConfigGraph(log)
-    const modules = await graph.getModules({ names: args.modules })
+    const modules = graph.getModules({ names: args.modules })
     const moduleNames = modules.map((m) => m.name)
 
     const initialTasks = flatten(

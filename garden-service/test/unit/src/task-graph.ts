@@ -542,13 +542,13 @@ describe("task-graph", () => {
       const t2 = new TestTask(garden, "a", false, { uid: "2", versionString: "2", callback: repeatedCallback("2") })
       const t3 = new TestTask(garden, "a", false, { uid: "3", versionString: "3", callback: repeatedCallback("3") })
 
-      const firstProcess = graph.process([t1])
+      const firstProcess = await graph.process([t1])
 
       // We make sure t1 is being processed before adding t2 and t3. Since t3 is added after t2,
       // only t1 and t3 should be processed (since t2 and t3 have the same key, "a").
       await t1StartedPromise
-      const secondProcess = graph.process([t2])
-      const thirdProcess = graph.process([t3])
+      const secondProcess = await graph.process([t2])
+      const thirdProcess = await graph.process([t3])
       await sleep(200) // TODO: Get rid of this?
       t1DoneResolver()
       await Bluebird.all([firstProcess, secondProcess, thirdProcess])
@@ -585,9 +585,9 @@ describe("task-graph", () => {
       const taskB = new TestTask(garden, "b", false, { ...opts, dependencies: [taskBDep] })
       const taskC = new TestTask(garden, "c", false, { ...opts })
 
-      const firstProcess = graph.process([taskA, taskADep1, taskADep2])
-      const secondProcess = graph.process([taskB, taskBDep])
-      const thirdProcess = graph.process([taskC])
+      const firstProcess = await graph.process([taskA, taskADep1, taskADep2])
+      const secondProcess = await graph.process([taskB, taskBDep])
+      const thirdProcess = await graph.process([taskC])
       aDoneResolver()
       await Bluebird.all([firstProcess, secondProcess, thirdProcess])
       expect(resultOrder).to.eql(["c", "a-dep1", "a-dep2", "b-dep", "a", "b"])
@@ -620,8 +620,8 @@ describe("task-graph", () => {
 
       const repeatTaskBDep = new TestTask(garden, "b-dep", true, { ...opts })
 
-      const firstProcess = graph.process([taskA, taskADep])
-      const secondProcess = graph.process([repeatTaskBDep])
+      const firstProcess = await graph.process([taskA, taskADep])
+      const secondProcess = await graph.process([repeatTaskBDep])
       aDoneResolver()
       await Bluebird.all([firstProcess, secondProcess])
       expect(resultOrder).to.eql(["b-dep", "a-dep1", "a"])

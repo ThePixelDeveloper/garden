@@ -114,7 +114,7 @@ describe("BuildDir", () => {
   describe("syncFromSrc", () => {
     it("should sync sources to the build dir", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const moduleA = await graph.getModule("module-a")
+      const moduleA = graph.getModule("module-a")
       await garden.buildDir.syncFromSrc(moduleA, garden.log)
       const buildDirA = await garden.buildDir.buildPath(moduleA)
 
@@ -127,7 +127,7 @@ describe("BuildDir", () => {
 
     it("should not sync sources for local exec modules", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const moduleE = await graph.getModule("module-e")
+      const moduleE = graph.getModule("module-e")
       await garden.buildDir.syncFromSrc(moduleE, garden.log)
       // This is the dir Garden would have synced the sources into
       const buildDirF = join(garden.buildDir.buildDirPath, moduleE.name)
@@ -137,7 +137,7 @@ describe("BuildDir", () => {
 
     it("should respect the file list in the module's version", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const moduleA = await graph.getModule("module-a")
+      const moduleA = graph.getModule("module-a")
 
       moduleA.version.files = [await getConfigFilePath(moduleA.path)]
 
@@ -150,7 +150,7 @@ describe("BuildDir", () => {
 
     it("should delete files that are not being synced from the module source directory", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const moduleA = await graph.getModule("module-a")
+      const moduleA = graph.getModule("module-a")
 
       const buildDirA = await garden.buildDir.buildPath(moduleA)
       const deleteMe = join(buildDirA, "delete-me")
@@ -166,7 +166,7 @@ describe("BuildDir", () => {
 
     it("should sync hidden files and directories (names starting with .)", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const module = await graph.getModule("hidden-files")
+      const module = graph.getModule("hidden-files")
 
       await garden.buildDir.syncFromSrc(module, garden.log)
 
@@ -177,7 +177,7 @@ describe("BuildDir", () => {
 
     it("should sync symlinks that point within the module root", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const module = await graph.getModule("symlink-within-module")
+      const module = graph.getModule("symlink-within-module")
 
       await garden.buildDir.syncFromSrc(module, garden.log)
 
@@ -188,7 +188,7 @@ describe("BuildDir", () => {
 
     it("should not sync symlinks that point outside the module root", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const module = await graph.getModule("symlink-outside-module")
+      const module = graph.getModule("symlink-outside-module")
 
       await garden.buildDir.syncFromSrc(module, garden.log)
 
@@ -198,7 +198,7 @@ describe("BuildDir", () => {
 
     it("should not sync absolute symlinks", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const module = await graph.getModule("symlink-absolute")
+      const module = graph.getModule("symlink-absolute")
 
       await garden.buildDir.syncFromSrc(module, garden.log)
 
@@ -212,7 +212,7 @@ describe("BuildDir", () => {
 
     try {
       const graph = await garden.getConfigGraph(garden.log)
-      const modules = await graph.getModules()
+      const modules = graph.getModules()
       const tasks = modules.map(
         (module) =>
           new BuildTask({
@@ -259,7 +259,7 @@ describe("BuildDir", () => {
   describe("buildPath", () => {
     it("should ensure the build path and return it", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const moduleA = await graph.getModule("module-a")
+      const moduleA = graph.getModule("module-a")
       const buildDirA = await garden.buildDir.buildPath(moduleA)
 
       expect(await pathExists(buildDirA)).to.eql(true)
@@ -268,7 +268,7 @@ describe("BuildDir", () => {
 
     it("should return the module path for a local exec modules", async () => {
       const graph = await garden.getConfigGraph(garden.log)
-      const moduleE = await graph.getModule("module-e")
+      const moduleE = graph.getModule("module-e")
       const buildDirE = await garden.buildDir.buildPath(moduleE)
 
       expect(buildDirE).to.eql(moduleE.path)
